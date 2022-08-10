@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "tumfl"
+description = "The Ultimate Minimizer For Lua: minimize your lua scripts"
+readme = "README.md"
+keywords = ["lua", "minimizer", "ast"]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+dependencies = []
+dynamic = ["version"]
+
+[project.scripts]
+factorio-circuit-ast = "tumfl"
+
+[tool.setuptools]
+packages = ["factorio_circuit_ast"]

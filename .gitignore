@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+.venv/
+htmlcov/
+.mypy_cache/
+.coverage
+*.egg-info
+dist/
+*__pycache__/
