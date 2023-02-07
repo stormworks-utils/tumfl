@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from .ASTNode import ASTNode
+from .Expression import Expression
 from tumfl.Token import Token, TokenType
 
 
-class String(ASTNode):
+class String(Expression):
+    """A lua string, like "abc" or [[abc]]"""
+
     def __init__(self, token: Token, value: str) -> None:
         super().__init__(token, "String")
         self.value: str = value

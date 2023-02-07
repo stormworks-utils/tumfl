@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Union, Any, TYPE_CHECKING
+from typing import Union, Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .lexer import NumberTuple
@@ -59,7 +59,6 @@ class TokenType(Enum):
     BIT_AND = "&"
     BIT_OR = "|"
     BIT_XOR = "~"
-    BIT_NOT = "~"
     BIT_SHIFT_LEFT = "<<"
     BIT_SHIFT_RIGHT = ">>"
     INTEGER_DIVISION = "//"
@@ -76,11 +75,13 @@ class Token:
         value: Union[str, bool, NumberTuple],
         line: int,
         column: int,
+        comment: Optional[list[str]] = None,
     ) -> None:
         self.type: TokenType = type
         self.value: Union[str, bool, NumberTuple] = value
         self.line: int = line
         self.column: int = column
+        self.comment: list[str] = comment or []
 
     def __hash__(self) -> int:
         return hash((self.type, self.value))
@@ -91,4 +92,4 @@ class Token:
         return False
 
     def __repr__(self) -> str:
-        return f"Token({self.type!r}, {self.value!r}, {self.line!r}, {self.column!r})"
+        return f"Token({self.type!r}, {self.value!r}, {self.line!r}, {self.column!r}, {self.comment!r})"

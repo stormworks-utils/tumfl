@@ -1,6 +1,6 @@
 import unittest
 
-from tumfl.AST.Number import *
+from tumfl.AST.Expression.Number import *
 
 
 class TestNumber(unittest.TestCase):
@@ -14,3 +14,18 @@ class TestNumber(unittest.TestCase):
         self.assertIs(nmb.float_offset, None)
         self.assertEqual(nmb.name, "Number")
         self.assertIs(nmb.token, tok)
+        self.assertEqual(nmb.to_int(), None)
+        self.assertEqual(nmb.to_float(), 2.1e10)
+        nmb = Number(tok, False, None, "2", "-5", None)
+        self.assertEqual(nmb.to_int(), None)
+        self.assertEqual(nmb.to_float(), 0.2e-5)
+        nmb = Number(tok, True, None, "2", None, "-5")
+        self.assertEqual(nmb.to_float(), float.fromhex("0x1.2p-5"))
+        nmb = Number(tok, True, "5", "1231f", None, "5")
+        self.assertEqual(nmb.to_float(), float.fromhex("5.1231fp5"))
+        nmb = Number(tok, False, "43534", None, None, None)
+        self.assertEqual(nmb.to_float(), 43534.0)
+        self.assertEqual(nmb.to_int(), 43534)
+        nmb = Number(tok, True, "43534f", None, None, None)
+        self.assertEqual(nmb.to_float(), 0x43534f)
+        self.assertEqual(nmb.to_int(), 0x43534f)

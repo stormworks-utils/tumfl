@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from .ASTNode import ASTNode
+from .Expression import Expression
 
 from tumfl.Token import TokenType, Token
 
 
-class Boolean(ASTNode):
+class Boolean(Expression):
+    """A boolean value (true or false)"""
+
     def __init__(self, token: Token, value: bool) -> None:
         super().__init__(token, "Boolean")
         self.value: bool = value

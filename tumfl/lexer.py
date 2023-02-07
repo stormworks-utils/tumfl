@@ -1,5 +1,5 @@
 import sys
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, TypedDict
 
 from .Token import TokenType, Token
 
@@ -41,6 +41,12 @@ ESCAPE_CODES: Dict[str, str] = {
 NumberTuple = Tuple[bool, Optional[str], Optional[str], Optional[str], Optional[str]]
 
 
+class TokenArgs(TypedDict):
+    line: int
+    column: int
+    comment: list[str]
+
+
 class Lexer:
     def __init__(self, text: str) -> None:
         self.text: str = text
@@ -52,6 +58,7 @@ class Lexer:
         self.newline_warn: int = 0
         self.current_char: Optional[str] = self.text[self.pos]
         self.last_hint: Optional[Tuple[str, int, int]] = None
+        self.comments: list[str] = []
 
     def error(
         self, message: str, line: Optional[int] = None, column: Optional[int] = None
@@ -64,6 +71,11 @@ class Lexer:
         print(message, file=sys.stderr)
         raise ValueError(message)
 
+    def get_token_args(self) -> TokenArgs:
+        comment: list[str] = self.comments[:]
+        self.comments.clear()
+        return {"line": self.line + 1, "column": self.column + 1, "comment": comment}
+
     def advance(self) -> None:
         """Advance the `pos` pointer"""
         self.pos += 1
@@ -72,7 +84,7 @@ class Lexer:
             self.column += 1
 
             if self.current_char == "\n":
-                self.column = 0
+                self.column = -1
                 self.line += 1
                 # init newline state machine
                 self.newline_warn = 1
@@ -141,11 +153,14 @@ class Lexer:
         assert self.current_char == "-" and self.peek() == "-"
         self.advance()
         self.advance()
+        comment: str = ""
         if self.current_char == "[" and self.peek() in ["[", "="]:
-            self.get_long_brackets()
+            comment = self.get_long_brackets()
         else:
             while self.current_char and self.current_char != "\n":
+                comment += self.current_char
                 self.advance()
+        self.comments.append(comment)
 
     def get_number(self) -> NumberTuple:
         """Parses a number into the Number ast node"""
@@ -320,36 +335,35 @@ class Lexer:
                 self.skip_comment()
                 continue
 
-            line: int = self.line
-            column: int = self.column
+            args: TokenArgs = self.get_token_args()
 
             if self.current_char in LETTER:
                 name: str = self.get_name()
                 if token_type := RESERVED_KEYWORDS.get(name):
-                    return Token(token_type, name, line, column)
-                return Token(TokenType.NAME, name, line, column)
+                    return Token(token_type, name, **args)
+                return Token(TokenType.NAME, name, **args)
 
             if self.current_char in NUMBER:
                 number: NumberTuple = self.get_number()
-                return Token(TokenType.NUMBER, number, line, column)
+                return Token(TokenType.NUMBER, number, **args)
 
             if self.current_char in ["'", '"']:
                 string: str = self.get_string()
-                return Token(TokenType.STRING, string, line, column)
+                return Token(TokenType.STRING, string, **args)
 
             if self.current_char == "[" and self.peek() in ["[", "="]:
                 string = self.get_long_brackets()
-                return Token(TokenType.STRING, string, line, column)
+                return Token(TokenType.STRING, string, **args)
 
             if peek := self.peek():
                 double_character: str = self.current_char + peek
                 if token_type := SYMBOLS.get(double_character):
                     self.advance()
-                    return Token(token_type, double_character, line, column)
+                    return Token(token_type, double_character, **args)
             char: str = self.current_char
             if token_type := SYMBOLS.get(char):
                 self.advance()
-                return Token(token_type, char, line, column)
+                return Token(token_type, char, **args)
 
             self.error(f"unrecognised character {self.current_char}")
-        return Token(TokenType.EOF, "eof", self.line, self.column)
+        return Token(TokenType.EOF, "eof", **self.get_token_args())

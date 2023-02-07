@@ -8,6 +8,8 @@ from tumfl.utils import generic_str
 
 
 class ASTNode(ABC):
+    """Base class for all AST nodes"""
+
     def __init__(self, token: Token, name: str) -> None:
         self.name: str = name
         self.token: Token = token
@@ -38,8 +40,3 @@ class ASTNode(ABC):
             node: Any = self.__getattribute__(i)
             if isinstance(node, ASTNode):
                 node.parent(self)
-
-    @staticmethod
-    @abstractmethod
-    def from_token(token: Token) -> ASTNode:
-        raise NotImplementedError()

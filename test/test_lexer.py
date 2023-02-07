@@ -241,7 +241,7 @@ class TestGetString(unittest.TestCase):
 
 class TestNextToken(unittest.TestCase):
     def test_simple(self):
-        lex = Lexer("a=2.45e-3;d=a+4<5")
+        lex = Lexer("a=2.45e-3;d=a+4<55")
         self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "a", 1, 1))
         self.assertEqual(lex.get_next_token(), Token(TokenType.ASSIGN, "=", 1, 2))
         nmb: NumberTuple = (False, "2", "45", "-3", None)
@@ -254,10 +254,10 @@ class TestNextToken(unittest.TestCase):
         nmb: NumberTuple = (False, "4", None, None, None)
         self.assertEqual(lex.get_next_token(), Token(TokenType.NUMBER, nmb, 1, 15))
         self.assertEqual(lex.get_next_token(), Token(TokenType.LESS_THAN, "<", 1, 16))
-        nmb: NumberTuple = (False, "5", None, None, None)
+        nmb: NumberTuple = (False, "55", None, None, None)
         self.assertEqual(lex.get_next_token(), Token(TokenType.NUMBER, nmb, 1, 17))
-        self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 18))
-        self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 18))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
 
     def test_comment_string(self):
         lex = Lexer("'abc\\\ndef'--abc\n\"abab'\"--[==[\n\\\n]===]]==]'abc'")
@@ -283,3 +283,21 @@ class TestNextToken(unittest.TestCase):
                 lex = Lexer(content)
                 while lex.get_next_token().type != TokenType.EOF:
                     ...
+
+
+class TestNil(unittest.TestCase):
+    def test_nil(self):
+        lex = Lexer("nil")
+        self.assertEqual(lex.get_next_token(), Token(TokenType.NIL, "nil", 1, 1))
+
+
+class TestComment(unittest.TestCase):
+    def test_comment_inclusion(self):
+        lex: Lexer = Lexer("--The following line is special\nabc")
+        tok: Token = lex.get_next_token()
+        self.assertEqual(tok.comment, ["The following line is special"])
+        self.assertEqual(tok.line, 2)
+        self.assertEqual(tok.column, 1)
+        lex: Lexer = Lexer("--some comment\n--another comment\nabc")
+        tok: Token = lex.get_next_token()
+        self.assertEqual(tok.comment, ["some comment", "another comment"])

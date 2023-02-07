@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from typing import Optional, Any
 
-from .ASTNode import ASTNode
+from .Expression import Expression
 from tumfl.Token import Token, TokenType
 
 
-class Number(ASTNode):
+class Number(Expression):
+    """A number, still preserved in the original representation, like 1.2, 3 or 0x123f"""
+
     def __init__(
         self,
         token: Token,
@@ -46,6 +48,31 @@ class Number(ASTNode):
             f"exponent={self.exponent!r}, "
             f"float_offset={self.float_offset!r})"
         )
+
+    def to_int(self) -> Optional[int]:
+        if self.exponent or self.fractional_part or self.float_offset:
+            # is a float
+            return None
+        assert self.integer_part
+        return int(self.integer_part, 16) if self.is_hex else int(self.integer_part)
+
+    def to_float(self) -> float:
+        str_repr: str = ""
+        if self.is_hex:
+            str_repr += "0x"
+        if self.integer_part:
+            str_repr += self.integer_part
+        elif self.float_offset or self.fractional_part or self.exponent:
+            str_repr += "1" if self.is_hex else "0"
+        if self.fractional_part:
+            str_repr += f".{self.fractional_part}"
+        if self.exponent:
+            str_repr += f"e{self.exponent}"
+        if self.float_offset:
+            str_repr += f"p{self.float_offset}"
+        if self.is_hex:
+            return float.fromhex(str_repr)
+        return float(str_repr)
 
 
 """    def __eq__(self, other: Any) -> bool:
