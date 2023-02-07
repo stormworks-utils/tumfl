@@ -27,5 +27,5 @@ class TestNumber(unittest.TestCase):
         self.assertEqual(nmb.to_float(), 43534.0)
         self.assertEqual(nmb.to_int(), 43534)
         nmb = Number(tok, True, "43534f", None, None, None)
-        self.assertEqual(nmb.to_float(), 0x43534f)
-        self.assertEqual(nmb.to_int(), 0x43534f)
+        self.assertEqual(nmb.to_float(), 0x43534F)
+        self.assertEqual(nmb.to_int(), 0x43534F)
