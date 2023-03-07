@@ -19,7 +19,8 @@ class ASTNode(ABC):
         if not isinstance(other, self.__class__):
             return False
         return all(
-            self.__getattribute__(i) == other.__getattribute__(i) for i in self.__dir()
+            callable(getattr(self, i)) or getattr(self, i) == getattr(other, i)
+            for i in self.__dir()
         )
 
     def __repr__(self) -> str:
@@ -37,6 +38,6 @@ class ASTNode(ABC):
     def parent(self, parent: ASTNode) -> None:
         self.parent_class = parent
         for i in self.__dir():
-            node: Any = self.__getattribute__(i)
+            node: Any = getattr(self, i)
             if isinstance(node, ASTNode):
                 node.parent(self)

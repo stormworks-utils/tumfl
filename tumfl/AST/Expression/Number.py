@@ -39,16 +39,6 @@ class Number(Expression):
             float_offset=value[4],
         )
 
-    def __repr__(self) -> str:
-        return (
-            f"Number("
-            f"is_hex={self.is_hex!r}, "
-            f"integer_part={self.integer_part!r}, "
-            f"fractional_part={self.fractional_part!r}, "
-            f"exponent={self.exponent!r}, "
-            f"float_offset={self.float_offset!r})"
-        )
-
     def to_int(self) -> Optional[int]:
         if self.exponent or self.fractional_part or self.float_offset:
             # is a float
@@ -62,7 +52,7 @@ class Number(Expression):
             str_repr += "0x"
         if self.integer_part:
             str_repr += self.integer_part
-        elif self.float_offset or self.fractional_part or self.exponent:
+        else:
             str_repr += "1" if self.is_hex else "0"
         if self.fractional_part:
             str_repr += f".{self.fractional_part}"
@@ -73,16 +63,3 @@ class Number(Expression):
         if self.is_hex:
             return float.fromhex(str_repr)
         return float(str_repr)
-
-
-"""    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, Number):
-            return (
-                self.is_hex == other.is_hex
-                and self.integer_part == other.integer_part
-                and self.fractional_part == other.fractional_part
-                and self.exponent == other.exponent
-                and self.float_offset == other.float_offset
-            )
-        return False
-"""

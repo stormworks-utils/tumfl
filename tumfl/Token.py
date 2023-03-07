@@ -92,4 +92,4 @@ class Token:
         return False
 
     def __repr__(self) -> str:
-        return f"Token({self.type!r}, {self.value!r}, {self.line!r}, {self.column!r}, {self.comment!r})"
+        return f"Token({self.type}, {self.value!r}, {self.line!r}, {self.column!r}, {self.comment!r})"

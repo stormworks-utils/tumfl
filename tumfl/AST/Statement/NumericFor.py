@@ -3,7 +3,7 @@ from typing import Optional
 
 from .Statement import Statement
 from .Block import Block
-from tumfl.AST.Expression import Expression
+from tumfl.AST.Expression.Expression import Expression
 from tumfl.Token import Token, TokenType
 
 

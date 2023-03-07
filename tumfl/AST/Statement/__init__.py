@@ -11,5 +11,6 @@ from .LocalAssign import LocalAssign, AttributedName
 from .LocalFunctionDefinition import LocalFunctionDefinition
 from .NumericFor import NumericFor
 from .Repeat import Repeat
+from .Semicolon import Semicolon
 from .Statement import Statement
 from .While import While

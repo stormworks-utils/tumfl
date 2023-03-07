@@ -24,7 +24,7 @@ def generic_str(
     if dir:
         for i in dir:
             string += f'{"    " if newlines else ""}{i}='
-            lines = repr(self.__getattribute__(i)).splitlines()
+            lines = repr(getattr(self, i)).splitlines()
             string += f"{lines.pop(0)}{newline_or_space}"
             for j in lines:
                 string += f'{"    "}{j}{newline_or_space}'

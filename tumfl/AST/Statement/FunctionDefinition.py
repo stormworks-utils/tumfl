@@ -3,7 +3,9 @@ from typing import Optional
 
 from .Statement import Statement
 from .Block import Block
-from tumfl.AST.Expression import Vararg
+from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
+from tumfl.AST.Expression.Name import Name
+from tumfl.AST.Expression.Vararg import Vararg
 from tumfl.Token import Token, TokenType
 
 
@@ -14,13 +16,24 @@ class FunctionDefinition(Statement):
         self,
         token: Token,
         comment: list[str],
-        names: list[str],
-        method_name: Optional[str],
-        parameters: list[str | Vararg],
+        names: list[Name],
+        method_name: Optional[Name],
+        parameters: list[Name | Vararg],
         body: Block,
     ):
         super().__init__(token, "FunctionDefinition", comment)
-        self.names: list[str] = names
-        self.method_name: Optional[str] = method_name
-        self.parameters: list[str | Vararg] = parameters
+        self.names: list[Name] = names
+        self.method_name: Optional[Name] = method_name
+        self.parameters: list[Name | Vararg] = parameters
         self.body: Block = body
+
+    @staticmethod
+    def from_base_definition(
+        base: BaseFunctionDefinition,
+        comment: list[str],
+        names: list[Name],
+        method_name: Optional[Name],
+    ) -> FunctionDefinition:
+        return FunctionDefinition(
+            base.token, comment, names, method_name, base.parameters, base.body
+        )
