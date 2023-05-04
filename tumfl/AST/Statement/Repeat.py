@@ -10,8 +10,8 @@ class Repeat(Statement):
     """The repeat ... until loop"""
 
     def __init__(
-        self, token: Token, comment: list[str], condition: Expression, body: Block
+        self, token: Token, condition: Expression, body: Block
     ):
-        super().__init__(token, "Repeat", comment)
+        super().__init__(token, "Repeat")
         self.condition: Expression = condition
         self.body: Block = body

@@ -21,10 +21,9 @@ class LocalAssign(Statement):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
         variable_names: list[AttributedName],
         expressions: Optional[list[Expression]],
     ):
-        super().__init__(token, "LocalAssign", comment)
+        super().__init__(token, "LocalAssign")
         self.variable_names: list[AttributedName] = variable_names
         self.expressions: Optional[list[Expression]] = expressions

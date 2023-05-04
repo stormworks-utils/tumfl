@@ -15,13 +15,12 @@ class FunctionDefinition(Statement):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
         names: list[Name],
         method_name: Optional[Name],
         parameters: list[Name | Vararg],
         body: Block,
     ):
-        super().__init__(token, "FunctionDefinition", comment)
+        super().__init__(token, "FunctionDefinition")
         self.names: list[Name] = names
         self.method_name: Optional[Name] = method_name
         self.parameters: list[Name | Vararg] = parameters
@@ -30,10 +29,9 @@ class FunctionDefinition(Statement):
     @staticmethod
     def from_base_definition(
         base: BaseFunctionDefinition,
-        comment: list[str],
         names: list[Name],
         method_name: Optional[Name],
     ) -> FunctionDefinition:
         return FunctionDefinition(
-            base.token, comment, names, method_name, base.parameters, base.body
+            base.token, names, method_name, base.parameters, base.body
         )

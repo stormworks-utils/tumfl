@@ -11,10 +11,9 @@ class Block(Statement):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
         statements: list[Statement],
         returns: list[Expression],
     ):
-        super().__init__(token, "Block", comment)
+        super().__init__(token, "Block")
         self.statements: list[Statement] = statements
         self.returns: list[Expression] = returns

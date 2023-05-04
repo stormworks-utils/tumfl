@@ -7,5 +7,5 @@ from tumfl.Token import Token, TokenType
 class Semicolon(Statement):
     """A semicolon"""
 
-    def __init__(self, token: Token, comment: list[str]):
-        super().__init__(token, "Semicolon", comment)
+    def __init__(self, token: Token):
+        super().__init__(token, "Semicolon")

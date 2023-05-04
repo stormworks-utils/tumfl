@@ -12,10 +12,9 @@ class Assign(Statement):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
         targets: list[Variable],
         expressions: list[Expression],
     ):
-        super().__init__(token, "Assign", comment)
+        super().__init__(token, "Assign")
         self.targets: list[Variable] = targets
         self.expressions: list[Expression] = expressions

@@ -14,20 +14,19 @@ class LocalFunctionDefinition(Statement, BaseFunctionDefinition):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
         function_name: Name,
         parameters: list[Name | Vararg],
         body: Block,
     ):
-        super().__init__(token, "LocalFunctionDefinition", comment)
+        super().__init__(token, "LocalFunctionDefinition")
         self.function_name: Name = function_name
         self.parameters: list[Name | Vararg] = parameters
         self.body: Block = body
 
     @staticmethod
     def from_base_definition(
-        base: BaseFunctionDefinition, comment: list[str], function_name: Name
+        base: BaseFunctionDefinition, function_name: Name
     ) -> LocalFunctionDefinition:
         return LocalFunctionDefinition(
-            base.token, comment, function_name, base.parameters, base.body
+            base.token, function_name, base.parameters, base.body
         )

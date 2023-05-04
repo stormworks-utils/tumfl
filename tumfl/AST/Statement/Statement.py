@@ -8,6 +8,6 @@ from tumfl.Token import Token
 class Statement(ASTNode, ABC):
     """Baseclass for all statements, must contain comments"""
 
-    def __init__(self, token: Token, name: str, comment: list[str]):
+    def __init__(self, token: Token, name: str):
         super().__init__(token, name)
-        self.comment: list[str] = comment
+        self.comment: list[str] = token.comment

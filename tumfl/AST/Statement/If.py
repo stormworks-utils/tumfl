@@ -13,12 +13,11 @@ class If(Statement):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
         test: Expression,
         true: Block,
         false: Optional[Block | If],
     ):
-        super().__init__(token, "If", comment)
+        super().__init__(token, "If")
         self.test: Expression = test
         self.true: Block = true
         self.false: Optional[Block | If] = false

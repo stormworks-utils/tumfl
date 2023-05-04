@@ -10,8 +10,8 @@ class While(Statement):
     """The while loop"""
 
     def __init__(
-        self, token: Token, comment: list[str], condition: Expression, body: Block
+        self, token: Token, condition: Expression, body: Block
     ):
-        super().__init__(token, "While", comment)
+        super().__init__(token, "While")
         self.condition: Expression = condition
         self.body: Block = body

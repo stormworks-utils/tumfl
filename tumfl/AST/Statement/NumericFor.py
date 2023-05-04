@@ -4,6 +4,7 @@ from typing import Optional
 from .Statement import Statement
 from .Block import Block
 from tumfl.AST.Expression.Expression import Expression
+from tumfl.AST.Expression.Name import Name
 from tumfl.Token import Token, TokenType
 
 
@@ -13,15 +14,14 @@ class NumericFor(Statement):
     def __init__(
         self,
         token: Token,
-        comment: list[str],
-        name: str,
+        name: Name,
         start: Expression,
         stop: Expression,
         step: Optional[Expression],
         body: Block,
     ):
-        super().__init__(token, "NumericFor", comment)
-        self.name: str = name
+        super().__init__(token, "NumericFor")
+        self.name: Name = name
         self.start: Expression = start
         self.stop: Expression = stop
         self.step: Optional[Expression] = step
