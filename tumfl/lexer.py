@@ -1,5 +1,5 @@
 import sys
-from typing import Optional, Dict, List, Tuple, TypedDict
+from typing import Optional, Dict, List, Tuple, TypedDict, NoReturn
 
 from .Token import TokenType, Token
 
@@ -62,7 +62,7 @@ class Lexer:
 
     def error(
         self, message: str, line: Optional[int] = None, column: Optional[int] = None
-    ) -> None:
+    ) -> NoReturn:
         current_line: int = line if line is not None else self.line
         current_column = column if column is not None else self.column
         print(f"Error on line {current_line + 1}:", file=sys.stderr)
@@ -146,7 +146,6 @@ class Lexer:
             inner_string += self.current_char
             self.advance()
         self.error("long brackets never closed", line, column)
-        assert False
 
     def skip_comment(self) -> None:
         """Skip a comment (long or short)"""
