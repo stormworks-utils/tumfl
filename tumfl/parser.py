@@ -1,6 +1,6 @@
 from __future__ import annotations
 import sys
-from typing import Optional, Callable
+from typing import Optional, Callable, NoReturn
 
 from .lexer import Lexer
 from .AST import *
@@ -20,8 +20,9 @@ class Parser:
             self.tokens.append(current_token)
         self.pos: int = 0
         self.current_token: Token = self.tokens[0]
+        self.context_hints: list[tuple[Token, str]] = []
 
-    def error(self, message: str, token: Token) -> None:
+    def error(self, message: str, token: Token) -> NoReturn:
         """Throw an error, prints out a description, and finally throws a value error"""
         current_line: int = token.line
         current_column = token.column
@@ -47,6 +48,18 @@ class Parser:
         """Peek for future tokens, returns EOF if the end is reached"""
         return self.get_token_at_pos(self.pos + distance)
 
+    def _add_hint(self, verbal_hint: str) -> None:
+        """Add a context hint for error messages"""
+        self.context_hints.append((self.current_token, verbal_hint))
+
+    def _remove_hint(self) -> None:
+        """Remove a context hint for error messages"""
+        self.context_hints.pop()
+
+    def _switch_hint(self, verbal_hint: str) -> None:
+        self._remove_hint()
+        self._add_hint(verbal_hint)
+
     def parse_chunk(self) -> Chunk:
         """
         Parse a chunk
@@ -54,28 +67,219 @@ class Parser:
         chunk: block
         """
         block: Block = self._parse_block()
-        return Chunk(block.token, block.comment, block.statements, block.returns)
+        return Chunk(block.token, block.statements, block.returns)
 
     def _parse_block(self) -> Block:
         """
         Parse a block
 
-        block: {stat} [RETURN explist [SEMICOLON]]
+        block: (DO | REPEAT | THEN | ELSE) {stat} [RETURN explist [SEMICOLON]] [END]
         """
-        block: Block = Block(self.current_token, self.current_token.comment, [], [])
+        block: Block = Block(self.current_token, [], [])
+        self.eat_token()
         while self.current_token.type not in (
             TokenType.EOF,
             TokenType.END,
             TokenType.RETURN,
+            TokenType.UNTIL
         ):
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:
             self.eat_token(TokenType.RETURN)
             # TODO
+        if self.current_token.type == TokenType.END:
+            self.eat_token()
         return block
 
     def _parse_statement(self) -> Statement:
         """Parse a statement"""
+        match self.current_token.type:
+            case TokenType.BREAK:
+                return self._parse_break()
+            case TokenType.GOTO:
+                return self._parse_goto()
+            case TokenType.LABEL_BORDER:
+                return self._parse_label()
+            case TokenType.DO:
+                return self._parse_block()
+            case TokenType.WHILE:
+                return self._parse_while()
+            case TokenType.REPEAT:
+                return self._parse_repeat()
+            case TokenType.IF:
+                return self._parse_if()
+
+    def _parse_break(self) -> Break:
+        """Parse a break statement"""
+        return Break(self.current_token)
+
+    def __eat_name(self) -> Name:
+        """Eat a name token and return the string value"""
+        name_token: Token = self.current_token
+        self.eat_token(TokenType.NAME)
+        return Name.from_token(name_token)
+
+    def _parse_goto(self) -> Goto:
+        """
+        Parse a goto statement
+
+        goto_stmt: GOTO Name
+        """
+        goto_token: Token = self.current_token
+        self._add_hint("goto name")
+        self.eat_token(TokenType.GOTO)
+        name: Name = self.__eat_name()
+        self._remove_hint()
+        return Goto(goto_token, name)
+
+    def _parse_label(self) -> Label:
+        """
+        Parse a label statement
+
+        label_stmt: LABEL_BORDER Name LABEL_BORDER
+        """
+        opening_token: Token = self.current_token
+        self._add_hint("label name")
+        self.eat_token(TokenType.LABEL_BORDER)
+        name: Name = self.__eat_name()
+        self._switch_hint("label end")
+        self.eat_token(TokenType.LABEL_BORDER)
+        self._remove_hint()
+        return Label(opening_token, name)
+
+    def _parse_while(self) -> While:
+        """
+        Parse a while loop
+
+        while_stmt: WHILE exp DO block END
+        """
+        while_token: Token = self.current_token
+        self._add_hint("while condition")
+        self.eat_token(TokenType.WHILE)
+        condition: Expression = self._parse_exp()
+        self._switch_hint("while block")
+        self.eat_token(TokenType.DO)
+        body: Block = self._parse_block()
+        body.comment.extend(while_token.comment)
+        self._remove_hint()
+        return While(while_token, condition, body)
+
+    def _parse_repeat(self) -> Repeat:
+        """
+        Parse a repeat until loop
+
+        repeat_stmt: REPEAT block UNTIL exp END
+        """
+        repeat_token: Token = self.current_token
+        self._add_hint("repeat block")
+        self.eat_token(TokenType.REPEAT)
+        body: Block = self._parse_block()
+        body.comment.extend(repeat_token.comment)
+        self._switch_hint("repeat condition")
+        self.eat_token(TokenType.UNTIL)
+        condition: Expression = self._parse_exp()
+        self.eat_token(TokenType.END)
+        self._remove_hint()
+        return Repeat(repeat_token, condition, body)
+
+    def _parse_if(self) -> If:
+        """
+        Parse an if statement
+
+        if_stmt: IF exp THEN block {ELSEIF exp THEN block} [ELSE block] end
+        """
+        if_token: Token = self.current_token
+        self._add_hint("if condition")
+        self.eat_token(TokenType.IF)
+        if_cond: Expression = self._parse_exp()
+        self._switch_hint("if block")
+        self.eat_token(TokenType.THEN)
+        if_block: Block = self._parse_block()
+        if_block.comment.extend(if_token.comment)
+        elseif_tokens: list[Token] = []
+        elseif_conditions: list[Expression] = []
+        elseif_blocks: list[Block] = []
+        while self.current_token.type == TokenType.ELSEIF:
+            self._switch_hint("elseif condition")
+            elseif_tokens.append(self.current_token)
+            self.eat_token()
+            elseif_conditions.append(self._parse_exp())
+            self._switch_hint("elseif block")
+            self.eat_token(TokenType.THEN)
+            elseif_blocks.append(self._parse_block())
+        else_block: Optional[Block] = None
+        if self.current_token.type == TokenType.ELSE:
+            self._switch_hint("else block")
+            self.eat_token()
+            else_block = self._parse_block()
+        self._remove_hint()
+        assert len(elseif_conditions) == len(elseif_blocks) and len(elseif_blocks) == len(elseif_tokens)
+        current_if: Optional[If | Block] = else_block
+        for i in range(len(elseif_conditions) - 1, -1, -1):
+            elseif_blocks[i].comment.extend(if_token.comment)
+            current_if = If(elseif_tokens[i], elseif_conditions[i], elseif_blocks[i], current_if)
+        return If(if_token, if_cond, if_block, current_if)
+
+    def _parse_for(self) -> IterativeFor | NumericFor:
+        """
+        Parses either an iterative or numeric for, depending on how it looks like
+
+        for_stmt: num_for | it_for
+        """
+        for_token: Token = self.current_token
+        self._add_hint("for name")
+        self.eat_token(TokenType.FOR)
+        first_name: Name = self.__eat_name()
+        if self.current_token.type == TokenType.ASSIGN:
+            return self._parse_numeric_for(for_token, first_name)
+        elif self.current_token.type in (TokenType.COMMA, TokenType.IN):
+            return self._parse_iterative_for(for_token, first_name)
+        self.error("unexpected for condition", self.current_token)
+
+    def _parse_numeric_for(self, for_token: Token, name: Name) -> NumericFor:
+        """
+        Parse a numeric for
+
+        num_for: FOR Name ASSIGN exp COMMA exp [COMMA exp] DO block END
+        """
+        self._switch_hint("numeric for start expression")
+        self.eat_token(TokenType.ASSIGN)
+        start: Expression = self._parse_exp()
+        self._switch_hint("numeric for stop expression")
+        self.eat_token(TokenType.COMMA)
+        stop: Expression = self._parse_exp()
+        step: Optional[Expression] = None
+        if self.current_token.type == TokenType.COMMA:
+            self._switch_hint("numeric for step expression")
+            self.eat_token()
+            step = self._parse_exp()
+        self._switch_hint("numeric for block")
+        self.eat_token(TokenType.DO)
+        body: Block = self._parse_block()
+        body.comment.extend(for_token.comment)
+        self._remove_hint()
+        return NumericFor(for_token, name, start, stop, step, body)
+
+    def _parse_iterative_for(self, for_token: Token, name: Name) -> IterativeFor:
+        """
+        Parse an iterative for
+
+        it_for: FOR namelist IN explist DO block END
+        """
+        self._switch_hint("iterative for name list")
+        names: list[Name] = self._parse_name_list(name)
+        self._switch_hint("iterative for expression list")
+        self.eat_token(TokenType.IN)
+        expressions: list[Expression] = []
+        while self.current_token.type == TokenType.COMMA:
+            self.eat_token()
+            expressions.append(self._parse_exp())
+        self._switch_hint("iterative for block")
+        self.eat_token(TokenType.DO)
+        body: Block = self._parse_block()
+        body.comment.extend(for_token.comment)
+        self._remove_hint()
+        return IterativeFor(for_token, names, expressions, body)
 
     def __parse_left_associative_binop(
         self, types: tuple[TokenType, ...], base: Callable[[], Expression]
@@ -299,14 +503,17 @@ class Parser:
         self.eat_token(TokenType.END)
         return BaseFunctionDefinition(token, parameters, block)
 
-    def _parse_name_list(self) -> list[Name]:
+    def _parse_name_list(self, first_name: Optional[Name] = None) -> list[Name]:
         """
         Parse a list of names
 
         name_list: Name {COMMA Name}
         """
-        names: list[Name] = []
-        has_comma: bool = True
+        names: list[Name] = [first_name] if first_name else []
+        has_comma: bool = not first_name
+        if first_name and self.current_token.type == TokenType.COMMA:
+            self.eat_token()
+            has_comma = True
         while self.current_token.type == TokenType.NAME and has_comma:
             names.append(Name.from_token(self.current_token))
             self.eat_token()

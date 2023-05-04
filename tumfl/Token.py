@@ -52,6 +52,7 @@ class TokenType(Enum):
     R_BRACKET = "]"
     SEMICOLON = ";"
     COLON = ":"
+    LABEL_BORDER = "::"
     COMMA = ","
     DOT = "."
     CONCAT = ".."
