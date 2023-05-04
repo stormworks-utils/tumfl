@@ -95,5 +95,19 @@ class TestParser(unittest.TestCase):
 
     def test_error(self):
         parser = Parser("1+")
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(ValueError):
             parser._parse_exp()
+
+    def test_unary_expr(self):
+        parser = Parser("1- -2")
+        expected_tree = BinOp.from_token(
+            Token(TokenType.MINUS, "-", 0, 0),
+            self.parse_number("1"),
+            UnOp.from_token(
+                Token(TokenType.MINUS, "-", 0, 0),
+                self.parse_number("2")
+            )
+        )
+        actual_tree = parser._parse_exp()
+        self.assertIsInstance(actual_tree, BinOp)
+        self.assertEqual(actual_tree, expected_tree)
