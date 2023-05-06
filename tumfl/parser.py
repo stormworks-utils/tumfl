@@ -20,7 +20,7 @@ class Parser:
             self.tokens.append(current_token)
         self.pos: int = 0
         self.current_token: Token = self.tokens[0]
-        self.context_hints: list[tuple[Token, str]] = []
+        self.context_hints: list[tuple[Token, str, str]] = []
 
     def error(self, message: str, token: Token) -> NoReturn:
         """Throw an error, prints out a description, and finally throws a value error"""
@@ -31,7 +31,7 @@ class Parser:
         print(" " * current_column + "^", file=sys.stderr)
         print(message, file=sys.stderr)
         if self.context_hints:
-            print("hints:", ' -> '.join(f"{hint} ({token.line}:{token.column})" for token, hint in self.context_hints), file=sys.stderr)
+            print("hints:", ' -> '.join(f"<{where}> {what} ({token.line}:{token.column})" for token, where, what in self.context_hints), file=sys.stderr)
         raise ValueError(message)
 
     def get_token_at_pos(self, pos: int) -> Token:
@@ -54,17 +54,17 @@ class Parser:
         """Peek for future tokens, returns EOF if the end is reached"""
         return self.get_token_at_pos(self.pos + distance)
 
-    def _add_hint(self, verbal_hint: str) -> None:
+    def _add_hint(self, where: str, what: str) -> None:
         """Add a context hint for error messages"""
-        self.context_hints.append((self.current_token, verbal_hint))
+        self.context_hints.append((self.current_token, where, what))
 
-    def _remove_hint(self) -> None:
+    def _remove_hint(self) -> tuple[Token, str, str]:
         """Remove a context hint for error messages"""
-        self.context_hints.pop()
+        return self.context_hints.pop()
 
-    def _switch_hint(self, verbal_hint: str) -> None:
-        self._remove_hint()
-        self._add_hint(verbal_hint)
+    def _switch_hint(self, what: str) -> None:
+        _, where, _ = self._remove_hint()
+        self._add_hint(where, what)
 
     def parse_chunk(self) -> Chunk:
         """
@@ -141,7 +141,7 @@ class Parser:
         goto_stmt: GOTO Name
         """
         goto_token: Token = self.current_token
-        self._add_hint("<goto> name")
+        self._add_hint("goto", "name")
         self.eat_token(TokenType.GOTO)
         name: Name = self.__eat_name()
         self._remove_hint()
@@ -154,10 +154,10 @@ class Parser:
         label_stmt: LABEL_BORDER Name LABEL_BORDER
         """
         opening_token: Token = self.current_token
-        self._add_hint("<label> name")
+        self._add_hint("label", "name")
         self.eat_token(TokenType.LABEL_BORDER)
         name: Name = self.__eat_name()
-        self._switch_hint("<label> end")
+        self._switch_hint("end")
         self.eat_token(TokenType.LABEL_BORDER)
         self._remove_hint()
         return Label(opening_token, name)
@@ -169,10 +169,10 @@ class Parser:
         while_stmt: WHILE exp DO block END
         """
         while_token: Token = self.current_token
-        self._add_hint("<while> condition")
+        self._add_hint("while", "condition")
         self.eat_token(TokenType.WHILE)
         condition: Expression = self._parse_exp()
-        self._switch_hint("<while> block")
+        self._switch_hint("block")
         self.eat_token(TokenType.DO)
         body: Block = self._parse_block()
         body.comment.extend(while_token.comment)
@@ -186,11 +186,11 @@ class Parser:
         repeat_stmt: REPEAT block UNTIL exp END
         """
         repeat_token: Token = self.current_token
-        self._add_hint("<repeat> block")
+        self._add_hint("repeat", "block")
         self.eat_token(TokenType.REPEAT)
         body: Block = self._parse_block()
         body.comment.extend(repeat_token.comment)
-        self._switch_hint("<repeat> condition")
+        self._switch_hint("condition")
         self.eat_token(TokenType.UNTIL)
         condition: Expression = self._parse_exp()
         self.eat_token(TokenType.END)
@@ -204,10 +204,10 @@ class Parser:
         if_stmt: IF exp THEN block {ELSEIF exp THEN block} [ELSE block] end
         """
         if_token: Token = self.current_token
-        self._add_hint("<if> condition")
+        self._add_hint("if", "if condition")
         self.eat_token(TokenType.IF)
         if_cond: Expression = self._parse_exp()
-        self._switch_hint("<if> block")
+        self._switch_hint("if block")
         self.eat_token(TokenType.THEN)
         if_block: Block = self._parse_block()
         if_block.comment.extend(if_token.comment)
@@ -215,16 +215,16 @@ class Parser:
         elseif_conditions: list[Expression] = []
         elseif_blocks: list[Block] = []
         while self.current_token.type == TokenType.ELSEIF:
-            self._switch_hint("<elseif> condition")
+            self._switch_hint("elseif condition")
             elseif_tokens.append(self.current_token)
             self.eat_token()
             elseif_conditions.append(self._parse_exp())
-            self._switch_hint("<elseif> block")
+            self._switch_hint("elseif block")
             self.eat_token(TokenType.THEN)
             elseif_blocks.append(self._parse_block())
         else_block: Optional[Block] = None
         if self.current_token.type == TokenType.ELSE:
-            self._switch_hint("<else> block")
+            self._switch_hint("else block")
             self.eat_token()
             else_block = self._parse_block()
         self._remove_hint()
@@ -242,9 +242,10 @@ class Parser:
         for_stmt: num_for | it_for
         """
         for_token: Token = self.current_token
-        self._add_hint("<for> name")
+        self._add_hint("for", "name")
         self.eat_token(TokenType.FOR)
         first_name: Name = self.__eat_name()
+        self._remove_hint()
         if self.current_token.type == TokenType.ASSIGN:
             return self._parse_numeric_for(for_token, first_name)
         elif self.current_token.type in (TokenType.COMMA, TokenType.IN):
@@ -257,18 +258,18 @@ class Parser:
 
         num_for: FOR Name ASSIGN exp COMMA exp [COMMA exp] DO block END
         """
-        self._switch_hint("<numeric for> start expression")
+        self._add_hint("numeric for", "start expression")
         self.eat_token(TokenType.ASSIGN)
         start: Expression = self._parse_exp()
-        self._switch_hint("<numeric for> stop expression")
+        self._switch_hint("stop expression")
         self.eat_token(TokenType.COMMA)
         stop: Expression = self._parse_exp()
         step: Optional[Expression] = None
         if self.current_token.type == TokenType.COMMA:
-            self._switch_hint("<numeric for> step expression")
+            self._switch_hint("step expression")
             self.eat_token()
             step = self._parse_exp()
-        self._switch_hint("<numeric for> block")
+        self._switch_hint("block")
         self.eat_token(TokenType.DO)
         body: Block = self._parse_block()
         body.comment.extend(for_token.comment)
@@ -281,12 +282,12 @@ class Parser:
 
         it_for: FOR namelist IN explist DO block END
         """
-        self._switch_hint("<iterative for> name list")
+        self._add_hint("iterative for", "name list")
         names: list[Name] = self._parse_name_list(name)
-        self._switch_hint("<iterative for> expression list")
+        self._switch_hint("expression list")
         self.eat_token(TokenType.IN)
         expressions: list[Expression] = self._parse_exp_list()
-        self._switch_hint("<iterative for> block")
+        self._switch_hint("block")
         self.eat_token(TokenType.DO)
         body: Block = self._parse_block()
         body.comment.extend(for_token.comment)
@@ -300,7 +301,7 @@ class Parser:
         funct_stmt: FUNCTION Name {DOT Name} [COLON Name] funcbody
         """
         function_token: Token = self.current_token
-        self._add_hint("<function> name")
+        self._add_hint("function", "name")
         self.eat_token(TokenType.FUNCTION)
         names: list[Name] = [self.__eat_name()]
         while self.current_token.type == TokenType.COMMA:
@@ -308,7 +309,7 @@ class Parser:
             names.append(self.__eat_name())
         method: Optional[Name] = None
         if self.current_token.type == TokenType.COLON:
-            self._switch_hint("<function> method name")
+            self._switch_hint("method name")
             self.eat_token()
             method = self.__eat_name()
         base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
@@ -320,20 +321,20 @@ class Parser:
 
         funcbody: L_PAREN [namelist [COMMA ELLIPSIS] | ELLIPSIS] R_PAREN block END
         """
-        self._switch_hint("<function> parameters")
+        self._switch_hint("parameters")
         self.eat_token(TokenType.L_PAREN)
         parameters: list[Name | Vararg] = []
         if self.current_token.type == TokenType.NAME:
             parameters.extend(self._parse_name_list())
             if self.current_token.type == TokenType.ELLIPSIS:
-                self._switch_hint("<function> varargs")
+                self._switch_hint("varargs")
                 parameters.append(Vararg.from_token(self.current_token))
                 self.eat_token()
         elif self.current_token.type == TokenType.ELLIPSIS:
-            self._switch_hint("<function> varargs")
+            self._switch_hint("varargs")
             parameters.append(Vararg.from_token(self.current_token))
             self.eat_token()
-        self._switch_hint("<function> body")
+        self._switch_hint("body")
         body: Block = self._parse_block()
         body.comment.extend(function_token.comment)
         self._remove_hint()
@@ -359,7 +360,7 @@ class Parser:
 
         local_funct_stmt: LOCAL FUNCTION Name funcbody
         """
-        self._add_hint("<local function> name")
+        self._add_hint("local function", "name")
         function_token: Token = self.current_token
         function_token.comment.extend(local_token.comment)
         self.eat_token(TokenType.FUNCTION)
@@ -373,15 +374,15 @@ class Parser:
 
         local_assign_stmt: LOCAL Name [LESS_THAN Name GREATER_THAN] {COMMA Name [LESS_THAN Name GREATER_THAN]} [ASSIGN explist]
         """
-        self._add_hint("<local assign> names")
+        self._add_hint("local assign", "names")
         self._assert(TokenType.NAME)
         names: list[AttributedName] = []
         while True:
-            self._switch_hint("<local assign> name")
+            self._switch_hint("name")
             name: Name = self.__eat_name()
             attribute: Optional[Name] = None
             if self.current_token.type == TokenType.LESS_THAN:
-                self._switch_hint("<local assign> name attribute")
+                self._switch_hint("name attribute")
                 self.eat_token()
                 attribute = self.__eat_name()
                 self.eat_token(TokenType.GREATER_THAN)
@@ -392,7 +393,7 @@ class Parser:
                 break
         expressions: Optional[list[Expression]] = None
         if self.current_token.type == TokenType.ASSIGN:
-            self._switch_hint("<local assign> expressions")
+            self._switch_hint("expressions")
             self.eat_token()
             expressions = self._parse_exp_list()
         return LocalAssign(local_token, names, expressions)
@@ -616,7 +617,7 @@ class Parser:
             return Vararg.from_token(token)
         elif token.type == TokenType.FUNCTION:
             function_token: Token = self.current_token
-            self._add_hint("<function expression> definition")
+            self._add_hint("function expression", "definition")
             self.eat_token()
             base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
             return ExpFunctionDefinition.from_base_definition(base_function)
