@@ -2,6 +2,7 @@ from .BinOp import BinOp, BinaryOperand
 from .Boolean import Boolean
 from .ExpFunctionCall import ExpFunctionCall
 from .ExpFunctionDefinition import ExpFunctionDefinition
+from .ExpMethodInvocation import ExpMethodInvocation
 from .Expression import Expression
 from .Index import Index
 from .Name import Name

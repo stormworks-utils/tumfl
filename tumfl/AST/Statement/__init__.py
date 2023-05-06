@@ -10,6 +10,7 @@ from .IterativeFor import IterativeFor
 from .Label import Label
 from .LocalAssign import LocalAssign, AttributedName
 from .LocalFunctionDefinition import LocalFunctionDefinition
+from .MethodInvocation import MethodInvocation
 from .NumericFor import NumericFor
 from .Repeat import Repeat
 from .Semicolon import Semicolon

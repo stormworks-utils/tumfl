@@ -594,7 +594,7 @@ class Parser:
         """
         Parse an atom
 
-        atom: NIL | TRUE | FALSE | NUMBER | STRING | ELLIPSIS | FUNCTION func_def | TODO
+        atom: NIL | TRUE | FALSE | NUMBER | STRING | ELLIPSIS | FUNCTION func_def | tableconstructor | var
         """
         token: Token = self.current_token
         if token.type == TokenType.NIL:
@@ -623,6 +623,8 @@ class Parser:
             return ExpFunctionDefinition.from_base_definition(base_function)
         elif token.type == TokenType.R_CURL:
             return self._parse_table_constructor()
+        elif token.type in (TokenType.L_PAREN, TokenType.NAME):
+            return self._parse_var()
         self.error("Unexpected expression", self.current_token)
 
     def _parse_name_list(self, first_name: Optional[Name] = None) -> list[Name]:
@@ -642,6 +644,68 @@ class Parser:
                 break
         return names
 
+    def _parse_var(self) -> Expression:
+        """
+        Parse a variable. Might be either a Variable, function call, method invocation, index, named index,
+        or any other expression
+
+        var: Name | L_PAREN exp R_PAREN
+        """
+        var: Expression
+        if self.current_token.type == TokenType.NAME:
+            self._add_hint("named var", "name")
+            var = self.__eat_name()
+        elif self.current_token.type == TokenType.L_PAREN:
+            self._add_hint("expression var", "expression")
+            self.eat_token()
+            var = self._parse_exp()
+            self.eat_token(TokenType.R_PAREN)
+        else:
+            self.error("Unexpected variable", self.current_token)
+            assert False
+        if self.current_token.type in (TokenType.L_BRACKET, TokenType.L_PAREN, TokenType.L_CURL, TokenType.DOT, TokenType.COLON):
+            var = self._parse_var_terminal(var)
+        self._remove_hint()
+        return var
+
+    def _parse_var_terminal(self, base_var: Expression) -> Expression:
+        """
+        Parse a variable terminal,
+
+        var_terminal: var | var_terminal L_BRACKET exp R_BRACKET | var_terminal DOT Name | var_terminal args |
+            var_terminal COLON Name args
+        """
+        token: Token = self.current_token
+        var: Expression
+        name: Name
+        match token.type:
+            case TokenType.L_PAREN | TokenType.L_CURL | TokenType.STRING:
+                return ExpFunctionCall(token, base_var, self._parse_args())
+            case TokenType.COLON:
+                self._add_hint("invocation", "name")
+                self.eat_token()
+                name = self.__eat_name()
+                self._remove_hint()
+                args: list[Expression] = self._parse_args()
+                return ExpMethodInvocation(token, base_var, name, args)
+            case TokenType.L_BRACKET:
+                self._add_hint("index", "expression")
+                self.eat_token()
+                expr: Expression = self._parse_exp()
+                self.eat_token(TokenType.R_BRACKET)
+                var = Index(token, base_var, expr)
+            case TokenType.DOT:
+                self._add_hint("index", "name")
+                self.eat_token()
+                name = self.__eat_name()
+                var = NamedIndex(token, base_var, name)
+            case _:
+                self.error("Unknown var terminal", self.current_token)
+                assert False
+        if self.current_token.type in (TokenType.L_BRACKET, TokenType.L_PAREN, TokenType.L_CURL, TokenType.DOT, TokenType.COLON):
+            var = self._parse_var_terminal(var)
+        return var
+
     def _parse_table_constructor(self) -> Table:
         """
         Parse a table constructor
@@ -656,6 +720,7 @@ class Parser:
             if self.current_token.type in (TokenType.COMMA, TokenType.SEMICOLON):
                 self.eat_token()
         self.eat_token(TokenType.R_CURL)
+        self._remove_hint()
         return table
 
     def _parse_field(self) -> TableField:
@@ -689,3 +754,23 @@ class Parser:
         self._remove_hint()
         return NumberedTableField(token, value)
 
+    def _parse_args(self) -> list[Expression]:
+        """
+        Parse an argument array for a function call
+
+        args: L_PAREN [explist] R_PAREN | tableconstructor | LiteralString
+        """
+        self._add_hint("function call", "arguments")
+        expressions: list[Expression] = []
+        if self.current_token.type == TokenType.L_PAREN:
+            self.eat_token()
+            expressions = self._parse_exp_list()
+            self.eat_token(TokenType.R_PAREN)
+        elif self.current_token.type == TokenType.L_CURL:
+            expressions.append(self._parse_table_constructor())
+        elif self.current_token.type == TokenType.STRING:
+            expressions.append(String.from_token(self.current_token))
+        else:
+            self.error("Unexpected function arguments", self.current_token)
+        self._remove_hint()
+        return expressions
