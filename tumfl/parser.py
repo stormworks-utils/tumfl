@@ -38,13 +38,17 @@ class Parser:
         """Gets the token at the position, or EOF if the position is greater than the end"""
         return self.tokens[min(pos, len(self.tokens) - 1)]
 
+    def _assert(self, token_type: TokenType) -> None:
+        """Assert that the current token is of a certain kind"""
+        if self.current_token.type != token_type:
+            self.error("Unexpected token", self.current_token)
+
     def eat_token(self, token_type: Optional[TokenType] = None) -> None:
         """Eats a specific token and throws an error, if the wrong token is found"""
-        if not token_type or self.current_token.type == token_type:
-            self.pos += 1
-            self.current_token = self.get_token_at_pos(self.pos)
-        else:
-            self.error("Unexpected token", self.current_token)
+        if token_type:
+            self._assert(token_type)
+        self.pos += 1
+        self.current_token = self.get_token_at_pos(self.pos)
 
     def peek(self, distance: int = 1) -> Token:
         """Peek for future tokens, returns EOF if the end is reached"""
@@ -88,7 +92,7 @@ class Parser:
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:
             self.eat_token(TokenType.RETURN)
-            # TODO
+            block.returns = self._parse_exp_list()
         if self.current_token.type == TokenType.END:
             self.eat_token()
         return block
@@ -96,6 +100,8 @@ class Parser:
     def _parse_statement(self) -> Statement:
         """Parse a statement"""
         match self.current_token.type:
+            case TokenType.SEMICOLON:
+                return self._parse_semi()
             case TokenType.BREAK:
                 return self._parse_break()
             case TokenType.GOTO:
@@ -110,6 +116,13 @@ class Parser:
                 return self._parse_repeat()
             case TokenType.IF:
                 return self._parse_if()
+            case TokenType.FOR:
+                return self._parse_for()
+            case TokenType.FUNCTION:
+                return self._parse_function()
+            case TokenType.LOCAL:
+                return self._parse_local()
+        self.error("Unexpected statement", self.current_token)
 
     def _parse_break(self) -> Break:
         """Parse a break statement"""
@@ -272,16 +285,142 @@ class Parser:
         names: list[Name] = self._parse_name_list(name)
         self._switch_hint("<iterative for> expression list")
         self.eat_token(TokenType.IN)
-        expressions: list[Expression] = []
-        while self.current_token.type == TokenType.COMMA:
-            self.eat_token()
-            expressions.append(self._parse_exp())
+        expressions: list[Expression] = self._parse_exp_list()
         self._switch_hint("<iterative for> block")
         self.eat_token(TokenType.DO)
         body: Block = self._parse_block()
         body.comment.extend(for_token.comment)
         self._remove_hint()
         return IterativeFor(for_token, names, expressions, body)
+
+    def _parse_function(self) -> FunctionDefinition:
+        """
+        Parse a non-local function statement
+
+        funct_stmt: FUNCTION Name {DOT Name} [COLON Name] funcbody
+        """
+        function_token: Token = self.current_token
+        self._add_hint("<function> name")
+        self.eat_token(TokenType.FUNCTION)
+        names: list[Name] = [self.__eat_name()]
+        while self.current_token.type == TokenType.COMMA:
+            self.eat_token()
+            names.append(self.__eat_name())
+        method: Optional[Name] = None
+        if self.current_token.type == TokenType.COLON:
+            self._switch_hint("<function> method name")
+            self.eat_token()
+            method = self.__eat_name()
+        base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
+        return FunctionDefinition.from_base_definition(base_function, names, method)
+
+    def _parse_funcbody(self, function_token: Token) -> BaseFunctionDefinition:
+        """
+        Parse a function body (starting from parameters till end)
+
+        funcbody: L_PAREN [namelist [COMMA ELLIPSIS] | ELLIPSIS] R_PAREN block END
+        """
+        self._switch_hint("<function> parameters")
+        self.eat_token(TokenType.L_PAREN)
+        parameters: list[Name | Vararg] = []
+        if self.current_token.type == TokenType.NAME:
+            parameters.extend(self._parse_name_list())
+            if self.current_token.type == TokenType.ELLIPSIS:
+                self._switch_hint("<function> varargs")
+                parameters.append(Vararg.from_token(self.current_token))
+                self.eat_token()
+        elif self.current_token.type == TokenType.ELLIPSIS:
+            self._switch_hint("<function> varargs")
+            parameters.append(Vararg.from_token(self.current_token))
+            self.eat_token()
+        self._switch_hint("<function> body")
+        body: Block = self._parse_block()
+        body.comment.extend(function_token.comment)
+        self._remove_hint()
+        return BaseFunctionDefinition(function_token, parameters, body)
+
+    def _parse_local(self) -> LocalFunctionDefinition | LocalAssign:
+        """
+        Parse a local function definition or local assign
+
+        local_stmt: local_funct_stmt | local_assign_stmt
+        """
+        local_token: Token = self.current_token
+        self.eat_token(TokenType.LOCAL)
+        if self.current_token.type == TokenType.FUNCTION:
+            return self._parse_local_function(local_token)
+        elif self.current_token.type == TokenType.NAME:
+            return self._parse_local_assignment(local_token)
+        self.error("Unexpected symbol after local", self.current_token)
+
+    def _parse_local_function(self, local_token: Token) -> LocalFunctionDefinition:
+        """
+        Parse a local function definition
+
+        local_funct_stmt: LOCAL FUNCTION Name funcbody
+        """
+        self._add_hint("<local function> name")
+        function_token: Token = self.current_token
+        function_token.comment.extend(local_token.comment)
+        self.eat_token(TokenType.FUNCTION)
+        name: Name = self.__eat_name()
+        base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
+        return LocalFunctionDefinition.from_base_definition(base_function, name)
+
+    def _parse_local_assignment(self, local_token: Token) -> LocalAssign:
+        """
+        Parse a local assign
+
+        local_assign_stmt: LOCAL Name [LESS_THAN Name GREATER_THAN] {COMMA Name [LESS_THAN Name GREATER_THAN]} [ASSIGN explist]
+        """
+        self._add_hint("<local assign> names")
+        self._assert(TokenType.NAME)
+        names: list[AttributedName] = []
+        while True:
+            self._switch_hint("<local assign> name")
+            name: Name = self.__eat_name()
+            attribute: Optional[Name] = None
+            if self.current_token.type == TokenType.LESS_THAN:
+                self._switch_hint("<local assign> name attribute")
+                self.eat_token()
+                attribute = self.__eat_name()
+                self.eat_token(TokenType.GREATER_THAN)
+            names.append(AttributedName(name, attribute))
+            if self.current_token.type == TokenType.COMMA:
+                self.eat_token()
+            else:
+                break
+        expressions: Optional[list[Expression]] = None
+        if self.current_token.type == TokenType.ASSIGN:
+            self._switch_hint("<local assign> expressions")
+            self.eat_token()
+            expressions = self._parse_exp_list()
+        return LocalAssign(local_token, names, expressions)
+
+    def _parse_exp_list(self) -> list[Expression]:
+        """
+        Parse a list of expressions
+
+        explist: exp {COMMA exp}
+        """
+        expressions: list[Expression] = []
+        while True:
+            expressions.append(self._parse_exp())
+            if self.current_token.type == TokenType.COMMA:
+                self.eat_token()
+            else:
+                break
+        return expressions
+
+    def _parse_semi(self) -> Semicolon:
+        """
+        Parse a semicolon
+
+        semi_stmt: SEMICOLON
+        """
+        semicolon_token: Token = self.current_token
+        self.eat_token(TokenType.SEMICOLON)
+        return Semicolon(semicolon_token)
 
     def __parse_left_associative_binop(
         self, types: tuple[TokenType, ...], base: Callable[[], Expression]
@@ -476,34 +615,12 @@ class Parser:
             self.eat_token()
             return Vararg.from_token(token)
         elif token.type == TokenType.FUNCTION:
+            function_token: Token = self.current_token
+            self._add_hint("<function expression> definition")
             self.eat_token()
-            base_function: BaseFunctionDefinition = self._parse_function_definition()
+            base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
             return ExpFunctionDefinition.from_base_definition(base_function)
         self.error("Unexpected expression", self.current_token)
-
-    def _parse_function_definition(self) -> BaseFunctionDefinition:
-        """
-        Parse a bare function definition
-
-        func_def: L_PAREN (name_list [COMMA ELLIPSIS] | ELLIPSIS) R_PAREN block END
-        """
-        token: Token = self.current_token
-        parameters: list[Name | Vararg] = []
-        self.eat_token(TokenType.L_PAREN)
-        if self.current_token.type == TokenType.NAME:
-            parameters.extend(self._parse_name_list())
-            if self.current_token.type == TokenType.COMMA:
-                self.eat_token()
-                if self.current_token.type == TokenType.ELLIPSIS:
-                    parameters.append(Vararg.from_token(self.current_token))
-                    self.eat_token()
-        elif self.current_token.type == TokenType.ELLIPSIS:
-            parameters.append(Vararg.from_token(self.current_token))
-            self.eat_token()
-        self.eat_token(TokenType.R_PAREN)
-        block: Block = self._parse_block()
-        self.eat_token(TokenType.END)
-        return BaseFunctionDefinition(token, parameters, block)
 
     def _parse_name_list(self, first_name: Optional[Name] = None) -> list[Name]:
         """
@@ -517,8 +634,7 @@ class Parser:
             self.eat_token()
             has_comma = True
         while self.current_token.type == TokenType.NAME and has_comma:
-            names.append(Name.from_token(self.current_token))
-            self.eat_token()
+            names.append(self.__eat_name())
             if self.current_token.type == TokenType.COMMA:
                 self.eat_token()
             else:
