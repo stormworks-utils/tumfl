@@ -621,6 +621,8 @@ class Parser:
             self.eat_token()
             base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
             return ExpFunctionDefinition.from_base_definition(base_function)
+        elif token.type == TokenType.R_CURL:
+            return self._parse_table_constructor()
         self.error("Unexpected expression", self.current_token)
 
     def _parse_name_list(self, first_name: Optional[Name] = None) -> list[Name]:
@@ -639,3 +641,51 @@ class Parser:
             else:
                 break
         return names
+
+    def _parse_table_constructor(self) -> Table:
+        """
+        Parse a table constructor
+
+        tableconstructor: L_CURL [field {(COMMA | SEMICOLON) field} (COMMA | SEMICOLON)] R_CURL
+        """
+        table: Table = Table(self.current_token, [])
+        self._add_hint("table constructor", "fields")
+        self.eat_token(TokenType.L_CURL)
+        while self.current_token.type not in (TokenType.R_CURL, TokenType.EOF):
+            table.fields.append(self._parse_field())
+            if self.current_token.type in (TokenType.COMMA, TokenType.SEMICOLON):
+                self.eat_token()
+        self.eat_token(TokenType.R_CURL)
+        return table
+
+    def _parse_field(self) -> TableField:
+        """
+        Parse a table field
+
+        field: L_BRACKET exp R_BRACKET ASSIGN exp | Name ASSIGN exp | exp
+        """
+        token: Token = self.current_token
+        value: Expression
+        if self.current_token.type == TokenType.L_BRACKET:
+            self._add_hint("explicit table field", "key expression")
+            self.eat_token()
+            at: Expression = self._parse_exp()
+            self.eat_token(TokenType.R_BRACKET)
+            self._switch_hint("value expression")
+            self.eat_token(TokenType.ASSIGN)
+            value = self._parse_exp()
+            self._remove_hint()
+            return ExplicitTableField(token, at, value)
+        elif self.current_token.type == TokenType.NAME:
+            self._add_hint("named table field", "name")
+            name: Name = self.__eat_name()
+            self._switch_hint("value expression")
+            self.eat_token(TokenType.ASSIGN)
+            value = self._parse_exp()
+            self._remove_hint()
+            return NamedTableField(token, name, value)
+        self._add_hint("numbered table field", "expression")
+        value = self._parse_exp()
+        self._remove_hint()
+        return NumberedTableField(token, value)
+

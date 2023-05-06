@@ -3,6 +3,7 @@ from abc import ABC
 
 from tumfl.AST.ASTNode import ASTNode
 from .Expression import Expression
+from .Name import Name
 from tumfl.Token import Token, TokenType
 
 
@@ -24,9 +25,9 @@ class ExplicitTableField(TableField):
 class NamedTableField(TableField):
     """Table field of the form `Name = expr`"""
 
-    def __init__(self, token: Token, name: str, value: Expression):
+    def __init__(self, token: Token, name: Name, value: Expression):
         super().__init__(token, "NamedTableField")
-        self.field_name: str = name
+        self.field_name: Name = name
         self.value: Expression = value
 
 

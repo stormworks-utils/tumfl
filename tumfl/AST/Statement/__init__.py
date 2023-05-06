@@ -2,6 +2,7 @@ from .Assign import Assign
 from .Block import Block
 from .Break import Break
 from .Chunk import Chunk
+from .FunctionCall import FunctionCall
 from .FunctionDefinition import FunctionDefinition
 from .Goto import Goto
 from .If import If
