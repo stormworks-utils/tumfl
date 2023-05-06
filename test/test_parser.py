@@ -111,3 +111,17 @@ class TestParser(unittest.TestCase):
         actual_tree = parser._parse_exp()
         self.assertIsInstance(actual_tree, BinOp)
         self.assertEqual(actual_tree, expected_tree)
+
+    def test_len_operator(self):
+        parser = Parser("#a + 1")
+        expected_tree = BinOp.from_token(
+            Token(TokenType.PLUS, "+", 0, 0),
+            UnOp.from_token(
+                Token(TokenType.HASH, "#", 0, 0),
+                Name.from_token(Token(TokenType.NAME, "a", 0, 0))
+            ),
+            self.parse_number("1")
+        )
+        actual_tree = parser._parse_exp()
+        self.assertIsInstance(actual_tree, BinOp)
+        self.assertEqual(actual_tree, expected_tree)
