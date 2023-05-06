@@ -630,14 +630,12 @@ class Parser:
         name_list: Name {COMMA Name}
         """
         names: list[Name] = [first_name] if first_name else []
-        has_comma: bool = not first_name
         if first_name and self.current_token.type == TokenType.COMMA:
             self.eat_token()
-            has_comma = True
-        while self.current_token.type == TokenType.NAME and has_comma:
+        while self.current_token.type == TokenType.NAME:
             names.append(self.__eat_name())
             if self.current_token.type == TokenType.COMMA:
                 self.eat_token()
             else:
-                has_comma = False
+                break
         return names
