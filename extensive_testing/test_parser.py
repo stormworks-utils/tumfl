@@ -6,7 +6,7 @@ from tumfl.parser import Parser
 
 
 class RunLuaTests(unittest.TestCase):
-    def _test_parser_tests(self) -> None:
+    def test_parser_tests(self) -> None:
         test_dir: Path = Path("lua-tests")
         for file in test_dir.glob("*.lua"):
             print(f"Testing parsing {file}", file=sys.stderr)
