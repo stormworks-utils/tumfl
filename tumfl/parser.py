@@ -877,3 +877,7 @@ class Parser:
             assert False, "unreachable line"
         self._remove_hint()
         return expressions
+
+
+def parse(chunk: str) -> Chunk:
+    return Parser(chunk).parse_chunk()
