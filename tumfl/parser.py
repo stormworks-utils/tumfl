@@ -766,14 +766,14 @@ class Parser:
         name: Name
         match token.type:
             case TokenType.L_PAREN | TokenType.L_CURL | TokenType.STRING:
-                return ExpFunctionCall(token, base_var, self._parse_args())
+                self._add_hint("function", "arguments")
+                var = ExpFunctionCall(token, base_var, self._parse_args())
             case TokenType.COLON:
                 self._add_hint("invocation", "name")
                 self._eat_token()
                 name = self.__eat_name()
-                self._remove_hint()
                 args: list[Expression] = self._parse_args()
-                return ExpMethodInvocation(token, base_var, name, args)
+                var = ExpMethodInvocation(token, base_var, name, args)
             case TokenType.L_BRACKET:
                 self._add_hint("index", "expression")
                 self._eat_token()

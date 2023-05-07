@@ -749,3 +749,20 @@ class TestParser(unittest.TestCase):
         parser = Parser("+")
         with self.assertRaises(ParserException):
             parser.parse_chunk()
+
+    def test_weird_stuff(self):
+        parser = Parser("assert()()")
+        expected_tree = self.get_chunk(
+            FunctionCall(
+                Token(TokenType.NAME, "assert", 0, 0),
+                ExpFunctionCall(
+                    Token(TokenType.NAME, "assert", 0, 0),
+                    self.parse_name("assert"),
+                    []
+                ),
+                []
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
