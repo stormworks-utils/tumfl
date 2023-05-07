@@ -32,6 +32,7 @@ class TestParser(unittest.TestCase):
             self.parse_number("1"),
             self.parse_number("2"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -45,6 +46,7 @@ class TestParser(unittest.TestCase):
                 self.parse_number("6"),
             ),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -58,6 +60,7 @@ class TestParser(unittest.TestCase):
             ),
             self.parse_number("1"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -66,6 +69,7 @@ class TestParser(unittest.TestCase):
             Token(TokenType.MINUS, "-", 0, 0),
             Nil.from_token(Token(TokenType.NIL, "nil", 0, 0)),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -74,6 +78,7 @@ class TestParser(unittest.TestCase):
             Token(TokenType.HASH, "#", 0, 0),
             self.parse_string("a"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -89,6 +94,7 @@ class TestParser(unittest.TestCase):
             ),
             self.parse_name("s"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -104,6 +110,7 @@ class TestParser(unittest.TestCase):
                 self.parse_number("3"),
             ),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -117,6 +124,7 @@ class TestParser(unittest.TestCase):
             ),
             self.parse_number("3"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -133,6 +141,7 @@ class TestParser(unittest.TestCase):
             self.parse_number("1"),
             UnOp.from_token(Token(TokenType.MINUS, "-", 0, 0), self.parse_number("2")),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -147,6 +156,7 @@ class TestParser(unittest.TestCase):
             ),
             self.parse_number("1"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -170,6 +180,7 @@ class TestParser(unittest.TestCase):
             ),
             self.parse_name("d"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_var(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -179,6 +190,7 @@ class TestParser(unittest.TestCase):
             self.parse_number("2"),
             self.parse_number("1"),
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_var(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -188,6 +200,7 @@ class TestParser(unittest.TestCase):
             self.parse_number("2"),
             [self.parse_number("1")],
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_var(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -198,18 +211,19 @@ class TestParser(unittest.TestCase):
             self.parse_name("b"),
             [],
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_var(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_table_constructor(self):
         parser = Parser("{}")
-        expected_result = Table(Token(TokenType.L_CURL, "{", 0, 0), [])
-        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        expected_tree = Table(Token(TokenType.L_CURL, "{", 0, 0), [])
+        self.assertEqual(parser._parse_table_constructor(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("{a}")
-        expected_result = Table(
+        expected_tree = Table(
             Token(TokenType.L_CURL, "{", 0, 0),
             [
                 NumberedTableField(
@@ -217,11 +231,12 @@ class TestParser(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        repr_test = repr(expected_tree)
+        self.assertEqual(parser._parse_table_constructor(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser('{["b"]=c}')
-        expected_result = Table(
+        expected_tree = Table(
             Token(TokenType.L_CURL, "{", 0, 0),
             [
                 ExplicitTableField(
@@ -231,11 +246,12 @@ class TestParser(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        repr_test = repr(expected_tree)
+        self.assertEqual(parser._parse_table_constructor(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("{a=b}")
-        expected_result = Table(
+        expected_tree = Table(
             Token(TokenType.L_CURL, "{", 0, 0),
             [
                 NamedTableField(
@@ -245,11 +261,12 @@ class TestParser(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        repr_test = repr(expected_tree)
+        self.assertEqual(parser._parse_table_constructor(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("{a, b,}")
-        expected_result = Table(
+        expected_tree = Table(
             Token(TokenType.L_CURL, "{", 0, 0),
             [
                 NumberedTableField(
@@ -260,7 +277,8 @@ class TestParser(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        repr_test = repr(expected_tree)
+        self.assertEqual(parser._parse_table_constructor(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("{f'alo'..'xixi'}")
@@ -281,6 +299,7 @@ class TestParser(unittest.TestCase):
                 )
             ],
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_table_constructor(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -347,50 +366,53 @@ class TestParser(unittest.TestCase):
 
     def test_parse_vararg(self):
         parser = Parser("...")
-        expected = Vararg(Token(TokenType.ELLIPSIS, "...", 0, 0))
-        self.assertEqual(parser._parse_exp(), expected)
+        expected_tree = Vararg(Token(TokenType.ELLIPSIS, "...", 0, 0))
+        self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_parse_table_expr(self):
         parser = Parser("{a}")
-        expected = Parser("{a}")._parse_table_constructor()
-        self.assertEqual(parser._parse_exp(), expected)
+        expected_tree = Parser("{a}")._parse_table_constructor()
+        self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_parse_funcbody(self):
         function_token = Token(TokenType.FUNCTION, "function", 0, 0)
         parser = Parser("()end")
-        expected = BaseFunctionDefinition(
+        expected_tree = BaseFunctionDefinition(
             function_token, [], Block(Token(TokenType.END, "end", 0, 0), [], [])
         )
+        repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
-        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(parser._parse_funcbody(function_token), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("(a,b)end")
-        expected = BaseFunctionDefinition(
+        expected_tree = BaseFunctionDefinition(
             function_token,
             [self.parse_name("a"), self.parse_name("b")],
             Block(Token(TokenType.END, "end", 0, 0), [], []),
         )
+        repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
-        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(parser._parse_funcbody(function_token), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("(...)end")
-        expected = BaseFunctionDefinition(
+        expected_tree = BaseFunctionDefinition(
             function_token,
             [Vararg.from_token(Token(TokenType.ELLIPSIS, "...", 0, 0))],
             Block(Token(TokenType.END, "end", 0, 0), [], []),
         )
+        repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
-        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(parser._parse_funcbody(function_token), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("(a,...)end")
-        expected = BaseFunctionDefinition(
+        expected_tree = BaseFunctionDefinition(
             function_token,
             [
                 self.parse_name("a"),
@@ -398,19 +420,21 @@ class TestParser(unittest.TestCase):
             ],
             Block(Token(TokenType.END, "end", 0, 0), [], []),
         )
+        repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
-        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(parser._parse_funcbody(function_token), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_parse_func_expr(self):
         parser = Parser("function()end")
-        expected = ExpFunctionDefinition(
+        expected_tree = ExpFunctionDefinition(
             Token(TokenType.FUNCTION, "function", 0, 0),
             [],
             Block(Token(TokenType.END, "end", 0, 0), [], []),
         )
-        self.assertEqual(parser._parse_exp(), expected)
+        repr_test = repr(expected_tree)
+        self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
@@ -423,6 +447,7 @@ class TestParser(unittest.TestCase):
                 [self.parse_string("bcd")],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -438,6 +463,7 @@ class TestParser(unittest.TestCase):
                 [self.parse_string("bcd")],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -452,6 +478,7 @@ class TestParser(unittest.TestCase):
                 ],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -461,6 +488,7 @@ class TestParser(unittest.TestCase):
         expected_tree = self.get_chunk(
             FunctionCall(Token(TokenType.NAME, "a", 0, 0), self.parse_name("a"), [])
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -480,6 +508,7 @@ class TestParser(unittest.TestCase):
                 [],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -494,6 +523,7 @@ class TestParser(unittest.TestCase):
                 [],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -501,6 +531,7 @@ class TestParser(unittest.TestCase):
     def test_semicolon(self):
         parser = Parser(";")
         expected_tree = self.get_chunk(Semicolon(Token(TokenType.SEMICOLON, ";", 0, 0)))
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -517,6 +548,7 @@ class TestParser(unittest.TestCase):
                 None,
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -531,6 +563,7 @@ class TestParser(unittest.TestCase):
                 None,
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -542,6 +575,7 @@ class TestParser(unittest.TestCase):
                 [self.parse_name("d"), self.parse_name("e")],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -556,6 +590,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.END, "end", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -576,6 +611,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.END, "end", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -589,6 +625,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.END, "end", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -603,6 +640,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.DO, "do", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -615,6 +653,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.DO, "do", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -631,6 +670,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.DO, "do", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -645,6 +685,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.DO, "do", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -664,6 +705,7 @@ class TestParser(unittest.TestCase):
                 None,
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -676,6 +718,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.ELSE, "else", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -693,6 +736,7 @@ class TestParser(unittest.TestCase):
                 ),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -706,6 +750,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.REPEAT, "repeat", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -719,6 +764,7 @@ class TestParser(unittest.TestCase):
                 Block(Token(TokenType.DO, "do", 0, 0), [], []),
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -728,6 +774,7 @@ class TestParser(unittest.TestCase):
         expected_tree = self.get_chunk(
             Label(Token(TokenType.LABEL_BORDER, "::", 0, 0), self.parse_name("label"))
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -737,6 +784,7 @@ class TestParser(unittest.TestCase):
         expected_tree = self.get_chunk(
             Goto(Token(TokenType.GOTO, "goto", 0, 0), self.parse_name("label"))
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -744,6 +792,7 @@ class TestParser(unittest.TestCase):
     def test_parse_break(self):
         parser = Parser("break")
         expected_tree = self.get_chunk(Break(Token(TokenType.BREAK, "break", 0, 0)))
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -751,6 +800,7 @@ class TestParser(unittest.TestCase):
     def test_parse_block(self):
         parser = Parser("do end")
         expected_tree = self.get_chunk(Block(Token(TokenType.DO, "do", 0, 0), [], []))
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -762,6 +812,7 @@ class TestParser(unittest.TestCase):
                 [],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -773,6 +824,7 @@ class TestParser(unittest.TestCase):
                 [self.parse_name("a")],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -788,6 +840,7 @@ class TestParser(unittest.TestCase):
                 [],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -799,6 +852,7 @@ class TestParser(unittest.TestCase):
                 [],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
@@ -819,6 +873,7 @@ class TestParser(unittest.TestCase):
                 [],
             )
         )
+        repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
