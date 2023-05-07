@@ -174,6 +174,78 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser._parse_var(), expected_tree)
 
+    def test_table_constructor(self):
+        parser = Parser("{}")
+        expected_result = Table(Token(TokenType.L_CURL, "{", 0, 0), [])
+        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        parser = Parser("{a}")
+        expected_result = Table(
+            Token(TokenType.L_CURL, "{", 0, 0),
+            [
+                NumberedTableField(
+                    Token(TokenType.NAME, "a", 0, 0), self.parse_name("a")
+                )
+            ],
+        )
+        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        parser = Parser('{["b"]=c}')
+        expected_result = Table(
+            Token(TokenType.L_CURL, "{", 0, 0),
+            [
+                ExplicitTableField(
+                    Token(TokenType.L_BRACKET, "[", 0, 0),
+                    self.parse_string("b"),
+                    self.parse_name("c"),
+                )
+            ],
+        )
+        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        parser = Parser("{a=b}")
+        expected_result = Table(
+            Token(TokenType.L_CURL, "{", 0, 0),
+            [
+                NamedTableField(
+                    Token(TokenType.NAME, "a", 0, 0),
+                    self.parse_name("a"),
+                    self.parse_name("b"),
+                )
+            ],
+        )
+        self.assertEqual(parser._parse_table_constructor(), expected_result)
+        parser = Parser("{a, b,}")
+        expected_result = Table(
+            Token(TokenType.L_CURL, "{", 0, 0),
+            [
+                NumberedTableField(Token(TokenType.NAME, "a", 0, 0), self.parse_name("a")),
+                NumberedTableField(Token(TokenType.NAME, "b", 0, 0), self.parse_name("b")),
+            ]
+        )
+        self.assertEqual(parser._parse_table_constructor(), expected_result)
+
+    def test_parse_args(self):
+        parser = Parser("()")
+        self.assertEqual(parser._parse_args(), [])
+        parser = Parser('(a, b, "d", 1)')
+        expected_args = [
+            self.parse_name("a"),
+            self.parse_name("b"),
+            self.parse_string("d"),
+            self.parse_number("1"),
+        ]
+        self.assertEqual(parser._parse_args(), expected_args)
+        parser = Parser("(a,b")
+        with self.assertRaises(ParserException):
+            parser._parse_args()
+        parser = Parser("(a,b,)")
+        with self.assertRaises(ParserException):
+            parser._parse_args()
+        parser = Parser('"abc"')
+        self.assertEqual(parser._parse_args(), [self.parse_string("abc")])
+        parser = Parser('{a,"b"}')
+        table_result = parser._parse_table_constructor()
+        parser = Parser('{a,"b"}')
+        self.assertEqual(parser._parse_args(), [table_result])
+
     def test_assign(self):
         parser = Parser('a = "bcd"')
         expected_tree = Chunk(
