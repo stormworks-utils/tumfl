@@ -830,7 +830,10 @@ class Parser:
             value = self._parse_exp()
             self._remove_hint()
             return ExplicitTableField(token, at, value)
-        elif self.current_token.type == TokenType.NAME and self.next_token.type == TokenType.ASSIGN:
+        elif (
+            self.current_token.type == TokenType.NAME
+            and self.next_token.type == TokenType.ASSIGN
+        ):
             self._add_hint("named table field", "name")
             name: Name = self.__eat_name()
             self._switch_hint("value expression")
