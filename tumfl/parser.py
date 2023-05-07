@@ -772,6 +772,7 @@ class Parser:
             case _:  # pragma: no cover
                 assert False, "unreachable line"
         var = self._parse_or_ignore_var_terminal(var)
+        self._remove_hint()
         return var
 
     def _parse_table_constructor(self) -> Table:
@@ -819,6 +820,7 @@ class Parser:
                 self._remove_hint()
                 return NamedTableField(token, name, value)
             value = self._parse_or_ignore_var_terminal(name)
+            self._remove_hint()
             return NumberedTableField(token, value)
         self._add_hint("numbered table field", "expression")
         value = self._parse_exp()
