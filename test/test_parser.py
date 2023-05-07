@@ -122,3 +122,71 @@ class TestParser(unittest.TestCase):
         actual_tree = parser._parse_exp()
         self.assertIsInstance(actual_tree, BinOp)
         self.assertEqual(actual_tree, expected_tree)
+
+    def test_wrong_token(self):
+        parser = Parser("a,b+")
+        with self.assertRaises(ValueError):
+            parser.parse_chunk()
+
+    def test_parse_var(self):
+        parser = Parser('a["b"].d')
+        expected_tree = NamedIndex(
+            Token(TokenType.NAME, "d", 0, 0),
+            Index(
+                Token(TokenType.R_BRACKET, "[", 0, 0),
+                Name.from_token(Token(TokenType.NAME, "a", 0, 0)),
+                String.from_token(Token(TokenType.STRING, "b", 0, 0)),
+            ),
+            Name.from_token(Token(TokenType.NAME, "d", 0, 0)),
+        )
+        self.assertEqual(parser._parse_var(), expected_tree)
+
+    def test_assign(self):
+        parser = Parser('a = "bcd"')
+        expected_tree = Chunk(
+            Token(TokenType.NAME, "a", 0, 0),
+            [
+                Assign(
+                    Token(TokenType.NAME, "a", 0, 0),
+                    [Name(Token(TokenType.NAME, "a", 0, 0), "a")],
+                    [String.from_token(Token(TokenType.STRING, "bcd", 0, 0))],
+                )
+            ],
+            [],
+        )
+        actual_tree = parser.parse_chunk()
+        self.assertEqual(actual_tree, expected_tree)
+        parser = Parser('a,b,c = "bcd"')
+        expected_tree = Chunk(
+            Token(TokenType.NAME, "a", 0, 0),
+            [
+                Assign(
+                    Token(TokenType.NAME, "a", 0, 0),
+                    [
+                        Name(Token(TokenType.NAME, "a", 0, 0), "a"),
+                        Name(Token(TokenType.NAME, "b", 0, 0), "b"),
+                        Name(Token(TokenType.NAME, "c", 0, 0), "c"),
+                    ],
+                    [String.from_token(Token(TokenType.STRING, "bcd", 0, 0))],
+                )
+            ],
+            [],
+        )
+        actual_tree = parser.parse_chunk()
+        self.assertEqual(actual_tree, expected_tree)
+        parser = Parser('a = "bcd", "def"')
+        expected_tree = Chunk(
+            Token(TokenType.NAME, "a", 0, 0),
+            [
+                Assign(
+                    Token(TokenType.NAME, "a", 0, 0),
+                    [Name(Token(TokenType.NAME, "a", 0, 0), "a")],
+                    [
+                        String.from_token(Token(TokenType.STRING, "bcd", 0, 0)),
+                        String.from_token(Token(TokenType.STRING, "def", 0, 0)),
+                    ],
+                )
+            ],
+            [],
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)

@@ -87,10 +87,16 @@ class Parser:
         """
         Parse a block
 
-        block: (DO | REPEAT | THEN | ELSE) {stat} [RETURN explist [SEMICOLON]] [END]
+        block: [DO | REPEAT | THEN | ELSE] {stat} [RETURN explist [SEMICOLON]] [END]
         """
         block: Block = Block(self.current_token, [], [])
-        self._eat_token()
+        if self.current_token in (
+            TokenType.DO,
+            TokenType.REPEAT,
+            TokenType.THEN,
+            TokenType.ELSE,
+        ):
+            self._eat_token()
         while self.current_token.type not in (
             TokenType.EOF,
             TokenType.END,
@@ -130,6 +136,8 @@ class Parser:
                 return self._parse_function()
             case TokenType.LOCAL:
                 return self._parse_local()
+            case TokenType.L_PAREN | TokenType.NAME:
+                return self._parse_var_stmt()
         self._error("Unexpected statement", self.current_token)
 
     def _parse_break(self) -> Break:
@@ -470,6 +478,7 @@ class Parser:
             self._eat_token()
             variables.append(self._parse_var())
         self._switch_hint("expressions")
+        self._eat_token(TokenType.ASSIGN)
         expressions: list[Expression] = self._parse_exp_list()
         self._remove_hint()
         return Assign(first_token, variables, expressions)
