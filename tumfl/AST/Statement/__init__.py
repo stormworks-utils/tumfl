@@ -8,7 +8,7 @@ from .Goto import Goto
 from .If import If
 from .IterativeFor import IterativeFor
 from .Label import Label
-from .LocalAssign import LocalAssign, AttributedName
+from .LocalAssign import AttributedName, LocalAssign
 from .LocalFunctionDefinition import LocalFunctionDefinition
 from .MethodInvocation import MethodInvocation
 from .NumericFor import NumericFor

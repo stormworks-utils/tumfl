@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from .Expression import Expression
 from tumfl.Token import Token, TokenType
+
+from .Expression import Expression
 
 
 class Nil(Expression):

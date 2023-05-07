@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from .Expression import Expression
-from .Vararg import Vararg
-from .Name import Name
-from tumfl.AST.Statement.Block import Block
 from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
+from tumfl.AST.Statement.Block import Block
 from tumfl.Token import Token, TokenType
+
+from .Expression import Expression
+from .Name import Name
+from .Vararg import Vararg
 
 
 class ExpFunctionDefinition(Expression):

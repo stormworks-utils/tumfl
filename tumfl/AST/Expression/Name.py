@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from .Variable import Variable
 from tumfl.Token import Token, TokenType
+
+from .Variable import Variable
 
 
 class Name(Variable):

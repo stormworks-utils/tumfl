@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from tumfl.Token import Token, TokenType
+
 from .Expression import Expression
 from .Name import Name
 from .Variable import Variable
-from tumfl.Token import Token, TokenType
 
 
 class NamedIndex(Variable):

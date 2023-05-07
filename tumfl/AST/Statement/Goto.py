@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from .Statement import Statement
 from tumfl.AST.Expression.Name import Name
 from tumfl.Token import Token, TokenType
+
+from .Statement import Statement
 
 
 class Goto(Statement):

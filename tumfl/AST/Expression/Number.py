@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional, Any
+from typing import Any, Optional
+
+from tumfl.Token import Token, TokenType
 
 from .Expression import Expression
-from tumfl.Token import Token, TokenType
 
 
 class Number(Expression):

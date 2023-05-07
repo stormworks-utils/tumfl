@@ -1,7 +1,7 @@
 import sys
-from typing import Optional, Dict, List, Tuple, TypedDict, NoReturn
+from typing import Dict, List, NoReturn, Optional, Tuple, TypedDict
 
-from .Token import TokenType, Token
+from .Token import Token, TokenType
 
 RESERVED_KEYWORDS: Dict[str, TokenType] = {
     t.value: t

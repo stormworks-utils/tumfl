@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from tumfl.Token import Token, TokenType
+
 from .Expression import Expression
 from .Variable import Variable
-from tumfl.Token import Token, TokenType
 
 
 class Index(Variable):

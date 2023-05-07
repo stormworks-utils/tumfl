@@ -1,9 +1,9 @@
 import unittest
 
 from tumfl.AST import *
-from tumfl.Token import Token, TokenType
-from tumfl.parser import Parser
 from tumfl.lexer import Lexer
+from tumfl.parser import Parser
+from tumfl.Token import Token, TokenType
 
 
 class TestParser(unittest.TestCase):
@@ -103,10 +103,7 @@ class TestParser(unittest.TestCase):
         expected_tree = BinOp.from_token(
             Token(TokenType.MINUS, "-", 0, 0),
             self.parse_number("1"),
-            UnOp.from_token(
-                Token(TokenType.MINUS, "-", 0, 0),
-                self.parse_number("2")
-            )
+            UnOp.from_token(Token(TokenType.MINUS, "-", 0, 0), self.parse_number("2")),
         )
         actual_tree = parser._parse_exp()
         self.assertIsInstance(actual_tree, BinOp)
@@ -118,9 +115,9 @@ class TestParser(unittest.TestCase):
             Token(TokenType.PLUS, "+", 0, 0),
             UnOp.from_token(
                 Token(TokenType.HASH, "#", 0, 0),
-                Name.from_token(Token(TokenType.NAME, "a", 0, 0))
+                Name.from_token(Token(TokenType.NAME, "a", 0, 0)),
             ),
-            self.parse_number("1")
+            self.parse_number("1"),
         )
         actual_tree = parser._parse_exp()
         self.assertIsInstance(actual_tree, BinOp)

@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from typing import Optional
+
+from tumfl.Token import Token, TokenType
 
 from .Expression import Expression
 from .Name import Name
-from tumfl.Token import Token, TokenType
 
 
 class ExpMethodInvocation(Expression):

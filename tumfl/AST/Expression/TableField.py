@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from abc import ABC
 
 from tumfl.AST.ASTNode import ASTNode
+from tumfl.Token import Token, TokenType
+
 from .Expression import Expression
 from .Name import Name
-from tumfl.Token import Token, TokenType
 
 
 class TableField(ASTNode, ABC):

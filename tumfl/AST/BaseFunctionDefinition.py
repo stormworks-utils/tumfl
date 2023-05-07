@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from abc import ABC
 
+from tumfl.Token import Token, TokenType
+
 from .ASTNode import ASTNode
-from .Statement.Block import Block
 from .Expression.Name import Name
 from .Expression.Vararg import Vararg
-from tumfl.Token import Token, TokenType
+from .Statement.Block import Block
 
 
 class BaseFunctionDefinition(ASTNode, ABC):

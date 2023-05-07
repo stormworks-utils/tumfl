@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .Expression import Expression
+from tumfl.Token import Token, TokenType
 
-from tumfl.Token import TokenType, Token
+from .Expression import Expression
 
 
 class Boolean(Expression):

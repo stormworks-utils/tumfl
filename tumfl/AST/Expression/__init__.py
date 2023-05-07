@@ -1,4 +1,4 @@
-from .BinOp import BinOp, BinaryOperand
+from .BinOp import BinaryOperand, BinOp
 from .Boolean import Boolean
 from .ExpFunctionCall import ExpFunctionCall
 from .ExpFunctionDefinition import ExpFunctionDefinition
@@ -11,7 +11,12 @@ from .Nil import Nil
 from .Number import Number
 from .String import String
 from .Table import Table
-from .TableField import TableField, ExplicitTableField, NamedTableField, NumberedTableField
-from .UnOp import UnOp, UnaryOperand
+from .TableField import (
+    ExplicitTableField,
+    NamedTableField,
+    NumberedTableField,
+    TableField,
+)
+from .UnOp import UnaryOperand, UnOp
 from .Vararg import Vararg
 from .Variable import Variable

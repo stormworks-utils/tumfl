@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from typing import Optional
 
 from tumfl.AST.Expression import Expression
 from tumfl.AST.Expression.Name import Name
-from .Statement import Statement
 from tumfl.Token import Token, TokenType
+
+from .Statement import Statement
 
 
 class MethodInvocation(Statement):
