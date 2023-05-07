@@ -412,6 +412,7 @@ class Parser:
             self._switch_hint("expressions")
             self._eat_token()
             expressions = self._parse_exp_list()
+        self._remove_hint()
         return LocalAssign(local_token, names, expressions)
 
     def _parse_exp_list(self) -> list[Expression]:

@@ -422,3 +422,47 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_semicolon(self):
+        parser = Parser(";")
+        expected_tree = self.get_chunk(Semicolon(Token(TokenType.SEMICOLON, ";", 0, 0)))
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_local_assignment(self):
+        parser = Parser("local a, b")
+        expected_tree = self.get_chunk(
+            LocalAssign(
+                Token(TokenType.LOCAL, "local", 0, 0),
+                [
+                    AttributedName(self.parse_name("a")),
+                    AttributedName(self.parse_name("b")),
+                ],
+                None,
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("local a <const>, b <final>")
+        expected_tree = self.get_chunk(
+            LocalAssign(
+                Token(TokenType.LOCAL, "local", 0, 0),
+                [
+                    AttributedName(self.parse_name("a"), self.parse_name("const")),
+                    AttributedName(self.parse_name("b"), self.parse_name("final")),
+                ],
+                None,
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("local a=d,e")
+        expected_tree = self.get_chunk(
+            LocalAssign(
+                Token(TokenType.LOCAL, "local", 0, 0),
+                [AttributedName(self.parse_name("a"))],
+                [self.parse_name("d"), self.parse_name("e")],
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)

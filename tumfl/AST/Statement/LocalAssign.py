@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from tumfl.AST.Expression.Expression import Expression
 from tumfl.AST.Expression.Name import Name
@@ -16,6 +16,11 @@ class AttributedName:
 
     def __repr__(self) -> str:
         return f"AttributedName(name={self.name!r}, attribute={self.attribute!r})"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, AttributedName):
+            return self.name == other.name and self.attribute == other.attribute
+        return False
 
 
 class LocalAssign(Statement):
