@@ -30,7 +30,7 @@ class Parser:
         current_column = token.column
         print(f"Error on line {current_line}:", file=sys.stderr)
         print(self.lexer.text_by_line[current_line - 1], file=sys.stderr)
-        print(" " * current_column + "^", file=sys.stderr)
+        print(" " * (current_column - 1) + "^", file=sys.stderr)
         print(message, file=sys.stderr)
         if self.context_hints:
             print(
