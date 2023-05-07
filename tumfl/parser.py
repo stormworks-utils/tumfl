@@ -460,7 +460,7 @@ class Parser:
                 first_var.method,
                 first_var.arguments,
             )
-        self._error("unexpected token after variable", self.current_token)
+        assert False, "unreachable line"
 
     def _parse_assignment(self, first_token: Token, first_var: Expression) -> Assign:
         """

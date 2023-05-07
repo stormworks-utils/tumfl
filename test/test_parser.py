@@ -383,3 +383,42 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_function_stmt(self):
+        parser = Parser("a()")
+        expected_tree = self.get_chunk(
+            FunctionCall(Token(TokenType.NAME, "a", 0, 0), self.parse_name("a"), [])
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("a[1].b()")
+        expected_tree = self.get_chunk(
+            FunctionCall(
+                Token(TokenType.NAME, "a", 0, 0),
+                NamedIndex(
+                    Token(TokenType.NAME, "b", 0, 0),
+                    Index(
+                        Token(TokenType.L_BRACKET, "[", 0, 0),
+                        self.parse_name("a"),
+                        self.parse_number("1"),
+                    ),
+                    self.parse_name("b"),
+                ),
+                [],
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_method_stmt(self):
+        parser = Parser("a:b()")
+        expected_tree = self.get_chunk(
+            MethodInvocation(
+                Token(TokenType.NAME, "a", 0, 0),
+                self.parse_name("a"),
+                self.parse_name("b"),
+                [],
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
