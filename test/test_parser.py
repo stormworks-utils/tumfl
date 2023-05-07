@@ -466,3 +466,16 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_local_function(self):
+        parser = Parser("local function a ()end")
+        expected_tree = self.get_chunk(
+            LocalFunctionDefinition(
+                Token(TokenType.LOCAL, "local", 0, 0),
+                self.parse_name("a"),
+                [],
+                Block(Token(TokenType.END, "end", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)

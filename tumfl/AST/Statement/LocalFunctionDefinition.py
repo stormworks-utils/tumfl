@@ -9,7 +9,7 @@ from .Block import Block
 from .Statement import Statement
 
 
-class LocalFunctionDefinition(Statement, BaseFunctionDefinition):
+class LocalFunctionDefinition(Statement):
     """Definition for a local function"""
 
     def __init__(
