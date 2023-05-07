@@ -314,17 +314,12 @@ class Lexer:
         return result
 
     def get_next_token(self) -> Token:
+        # skip prelude
+        if self.line == 0 and self.column == 0 and self.current_char == "#":
+            while self.current_char and self.current_char != "\n":
+                self.advance()
         while self.current_char:
             self.last_hint = None
-            # skip prelude
-            if (
-                self.line == 0
-                and self.column == 0
-                and self.current_char == "#"
-                and self.peek() == "!"
-            ):
-                while self.current_char and self.current_char != "\n":
-                    self.advance()
             # skip whitespace
             if self.current_char.isspace():
                 self.skip_whitespace()
