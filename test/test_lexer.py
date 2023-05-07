@@ -251,7 +251,7 @@ class TestNextToken(unittest.TestCase):
         self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
 
     def test_double_character_token(self):
-        lex = Lexer('==')
+        lex = Lexer("==")
         self.assertEqual(lex.get_next_token(), Token(TokenType.EQUALS, "==", 0, 0))
         self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 0, 0))
 
