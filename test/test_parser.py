@@ -12,6 +12,14 @@ class TestParser(unittest.TestCase):
         lex = Lexer(to_parse)
         return Number.from_token(lex.get_next_token())
 
+    @staticmethod
+    def parse_name(name: str) -> Name:
+        return Name.from_token(Token(TokenType.NAME, name, 0, 0))
+
+    @staticmethod
+    def parse_string(string: str) -> String:
+        return String.from_token(Token(TokenType.STRING, string, 0, 0))
+
     def test_simple_exp(self):
         parser = Parser("1+2")
         expected_tree = BinOp.from_token(
@@ -59,7 +67,7 @@ class TestParser(unittest.TestCase):
         parser = Parser("#'a'")
         expected_tree = UnOp.from_token(
             Token(TokenType.HASH, "#", 0, 0),
-            String.from_token(Token(TokenType.STRING, "a", 0, 0)),
+            self.parse_string("a"),
         )
         actual_tree = parser._parse_exp()
         self.assertIsInstance(actual_tree, UnOp)
@@ -115,7 +123,7 @@ class TestParser(unittest.TestCase):
             Token(TokenType.PLUS, "+", 0, 0),
             UnOp.from_token(
                 Token(TokenType.HASH, "#", 0, 0),
-                Name.from_token(Token(TokenType.NAME, "a", 0, 0)),
+                self.parse_name("a"),
             ),
             self.parse_number("1"),
         )
@@ -137,10 +145,32 @@ class TestParser(unittest.TestCase):
             Token(TokenType.NAME, "d", 0, 0),
             Index(
                 Token(TokenType.R_BRACKET, "[", 0, 0),
-                Name.from_token(Token(TokenType.NAME, "a", 0, 0)),
-                String.from_token(Token(TokenType.STRING, "b", 0, 0)),
+                self.parse_name("a"),
+                self.parse_string("b"),
             ),
-            Name.from_token(Token(TokenType.NAME, "d", 0, 0)),
+            self.parse_name("d"),
+        )
+        self.assertEqual(parser._parse_var(), expected_tree)
+        parser = Parser("(2)[1]")
+        expected_tree = Index(
+            Token(TokenType.L_BRACKET, "[", 0, 0),
+            self.parse_number("2"),
+            self.parse_number("1"),
+        )
+        self.assertEqual(parser._parse_var(), expected_tree)
+        parser = Parser("(2)(1)")
+        expected_tree = ExpFunctionCall(
+            Token(TokenType.L_BRACKET, "[", 0, 0),
+            self.parse_number("2"),
+            [self.parse_number("1")],
+        )
+        self.assertEqual(parser._parse_var(), expected_tree)
+        parser = Parser("a:b()")
+        expected_tree = ExpMethodInvocation(
+            Token(TokenType.COLON, "[", 0, 0),
+            self.parse_name("a"),
+            self.parse_name("b"),
+            [],
         )
         self.assertEqual(parser._parse_var(), expected_tree)
 
@@ -151,8 +181,8 @@ class TestParser(unittest.TestCase):
             [
                 Assign(
                     Token(TokenType.NAME, "a", 0, 0),
-                    [Name(Token(TokenType.NAME, "a", 0, 0), "a")],
-                    [String.from_token(Token(TokenType.STRING, "bcd", 0, 0))],
+                    [self.parse_name("a")],
+                    [self.parse_string("bcd")],
                 )
             ],
             [],
@@ -166,11 +196,11 @@ class TestParser(unittest.TestCase):
                 Assign(
                     Token(TokenType.NAME, "a", 0, 0),
                     [
-                        Name(Token(TokenType.NAME, "a", 0, 0), "a"),
-                        Name(Token(TokenType.NAME, "b", 0, 0), "b"),
-                        Name(Token(TokenType.NAME, "c", 0, 0), "c"),
+                        self.parse_name("a"),
+                        self.parse_name("b"),
+                        self.parse_name("c"),
                     ],
-                    [String.from_token(Token(TokenType.STRING, "bcd", 0, 0))],
+                    [self.parse_string("bcd")],
                 )
             ],
             [],
@@ -183,10 +213,10 @@ class TestParser(unittest.TestCase):
             [
                 Assign(
                     Token(TokenType.NAME, "a", 0, 0),
-                    [Name(Token(TokenType.NAME, "a", 0, 0), "a")],
+                    [self.parse_name("a")],
                     [
-                        String.from_token(Token(TokenType.STRING, "bcd", 0, 0)),
-                        String.from_token(Token(TokenType.STRING, "def", 0, 0)),
+                        self.parse_string("bcd"),
+                        self.parse_string("def"),
                     ],
                 )
             ],

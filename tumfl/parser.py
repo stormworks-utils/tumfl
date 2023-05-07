@@ -716,7 +716,6 @@ class Parser:
             var = self._parse_exp()
             self._eat_token(TokenType.R_PAREN)
         else:
-            self._error("Unexpected variable", self.current_token)
             assert False
         var = self._parse_or_ignore_var_terminal(var)
         self._remove_hint()
@@ -768,9 +767,8 @@ class Parser:
                 self._eat_token()
                 name = self.__eat_name()
                 var = NamedIndex(token, base_var, name)
-            case _:
-                self._error("Unknown var terminal", self.current_token)
-                assert False
+            case _:  # pragma: no cover
+                assert False, "unreachable line"
         var = self._parse_or_ignore_var_terminal(var)
         return var
 
@@ -832,13 +830,14 @@ class Parser:
         expressions: list[Expression] = []
         if self.current_token.type == TokenType.L_PAREN:
             self._eat_token()
-            expressions = self._parse_exp_list()
+            if self.current_token.type != TokenType.R_PAREN:
+                expressions = self._parse_exp_list()
             self._eat_token(TokenType.R_PAREN)
         elif self.current_token.type == TokenType.L_CURL:
             expressions.append(self._parse_table_constructor())
         elif self.current_token.type == TokenType.STRING:
             expressions.append(String.from_token(self.current_token))
         else:
-            self._error("Unexpected function arguments", self.current_token)
+            assert False, "unreachable line"
         self._remove_hint()
         return expressions
