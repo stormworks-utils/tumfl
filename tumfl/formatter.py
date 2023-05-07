@@ -61,7 +61,7 @@ class Formatter(BasicWalker[str]):
         if force_long or "\n" in comment:
             level: int = self._find_level(comment)
             return f"--[{'=' * level}[{comment}]{'=' * level}]"
-        newline: str = self.s.STMT_SEP if '\n' in self.s.STMT_SEP else "\n"
+        newline: str = self.s.STMT_SEP if "\n" in self.s.STMT_SEP else "\n"
         return f"--{self.s.COMMENT_SEP}{comment}{newline}"
 
     def _format_function_args(self, args: Sequence[Expression]) -> str:
