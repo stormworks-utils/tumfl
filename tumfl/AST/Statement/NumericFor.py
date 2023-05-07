@@ -16,14 +16,14 @@ class NumericFor(Statement):
     def __init__(
         self,
         token: Token,
-        name: Name,
+        variable_name: Name,
         start: Expression,
         stop: Expression,
         step: Optional[Expression],
         body: Block,
     ):
         super().__init__(token, "NumericFor")
-        self.name: Name = name
+        self.variable_name: Name = variable_name
         self.start: Expression = start
         self.stop: Expression = stop
         self.step: Optional[Expression] = step

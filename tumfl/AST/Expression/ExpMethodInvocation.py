@@ -14,11 +14,11 @@ class ExpMethodInvocation(Expression):
     def __init__(
         self,
         token: Token,
-        variable: Expression,
+        function: Expression,
         method: Name,
         arguments: list[Expression],
     ):
         super().__init__(token, "ExpMethodInvocation")
-        self.function: Expression = variable
+        self.function: Expression = function
         self.method: Name = method
         self.arguments: list[Expression] = arguments
