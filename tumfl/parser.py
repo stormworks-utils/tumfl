@@ -10,19 +10,23 @@ from .lexer import Lexer
 from .Token import Token, TokenType
 
 
+class Hint:
+    def __init__(self, token: Token, where: str, what: str):
+        self.token: Token = token
+        self.where: str = where
+        self.what: str = what
+
+    def __str__(self) -> str:
+        return f"<{self.where}> {self.what} ({self.token.line}:{self.token.column})"
+
+
 class Parser:
     def __init__(self, chunk: str):
         self.chunk: str = chunk
         self.lexer: Lexer = Lexer(self.chunk)
-        self.tokens: list[Token] = []
-        while (current_token := self.lexer.get_next_token()).type != TokenType.EOF:
-            self.tokens.append(current_token)
-        else:
-            # adds the eof to the end of the token stream
-            self.tokens.append(current_token)
         self.pos: int = 0
-        self.current_token: Token = self.tokens[0]
-        self.context_hints: list[tuple[Token, str, str]] = []
+        self.current_token: Token = self.lexer.get_next_token()
+        self.context_hints: list[Hint] = []
 
     def _error(self, message: str, token: Token) -> NoReturn:
         """Throw an error, prints out a description, and finally throws a value error"""
@@ -37,17 +41,10 @@ class Parser:
         if self.context_hints:
             print(
                 "hints:",
-                " -> ".join(
-                    f"<{where}> {what} ({token.line}:{token.column})"
-                    for token, where, what in self.context_hints
-                ),
+                " -> ".join(str(hint) for hint in self.context_hints),
                 file=sys.stderr,
             )
         raise ParserException(message, self.context_hints, token)
-
-    def _get_token_at_pos(self, pos: int) -> Token:
-        """Gets the token at the position, or EOF if the position is greater than the end"""
-        return self.tokens[min(pos, len(self.tokens) - 1)]
 
     def _assert(self, token_type: TokenType) -> None:
         """Assert that the current token is of a certain kind"""
@@ -59,23 +56,18 @@ class Parser:
         if token_type:
             self._assert(token_type)
         self.pos += 1
-        self.current_token = self._get_token_at_pos(self.pos)
-
-    def _peek(self, distance: int = 1) -> Token:
-        """Peek for future tokens, returns EOF if the end is reached"""
-        return self._get_token_at_pos(self.pos + distance)
+        self.current_token = self.lexer.get_next_token()
 
     def _add_hint(self, where: str, what: str) -> None:
         """Add a context hint for error messages"""
-        self.context_hints.append((self.current_token, where, what))
+        self.context_hints.append(Hint(self.current_token, where, what))
 
-    def _remove_hint(self) -> tuple[Token, str, str]:
+    def _remove_hint(self) -> None:
         """Remove a context hint for error messages"""
-        return self.context_hints.pop()
+        self.context_hints.pop()
 
     def _switch_hint(self, what: str) -> None:
-        _, where, _ = self._remove_hint()
-        self._add_hint(where, what)
+        self.context_hints[-1].what = what
 
     def parse_chunk(self) -> Chunk:
         """
