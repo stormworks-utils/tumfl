@@ -502,7 +502,10 @@ class Parser:
         return node
 
     def __parse_right_associative_binop(
-        self, type: TokenType, base: Callable[[], Expression], operand: Callable[[], Expression]
+        self,
+        type: TokenType,
+        base: Callable[[], Expression],
+        operand: Callable[[], Expression],
     ) -> Expression:
         """Parse a generic right associative binop"""
         nodes: list[Expression] = [base()]
