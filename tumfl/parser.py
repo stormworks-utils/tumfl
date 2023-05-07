@@ -21,7 +21,14 @@ class Hint:
 
 
 class Parser:
-    _BLOCK_END_TYPES = (TokenType.EOF,TokenType.END,TokenType.RETURN,TokenType.UNTIL,TokenType.ELSEIF,TokenType.ELSE,)
+    _BLOCK_END_TYPES = (
+        TokenType.EOF,
+        TokenType.END,
+        TokenType.RETURN,
+        TokenType.UNTIL,
+        TokenType.ELSEIF,
+        TokenType.ELSE,
+    )
 
     def __init__(self, chunk: str):
         self.chunk: str = chunk
@@ -93,7 +100,10 @@ class Parser:
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:
             self._eat_token(TokenType.RETURN)
-            if self.current_token.type not in (TokenType.SEMICOLON,) + self._BLOCK_END_TYPES:
+            if (
+                self.current_token.type
+                not in (TokenType.SEMICOLON,) + self._BLOCK_END_TYPES
+            ):
                 block.returns = self._parse_exp_list()
             if self.current_token.type == TokenType.SEMICOLON:
                 self._eat_token()
