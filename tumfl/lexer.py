@@ -357,7 +357,8 @@ class Lexer:
 
             if self.current_char == "." and self.peek() == ".":
                 self.advance()
-                if self.peek() == ".":
+                self.advance()
+                if self.current_char == ".":
                     self.advance()
                     return Token(TokenType.ELLIPSIS, "...", **args)
                 else:
@@ -366,6 +367,7 @@ class Lexer:
             if peek := self.peek():
                 double_character: str = self.current_char + peek
                 if token_type := SYMBOLS.get(double_character):
+                    self.advance()
                     self.advance()
                     return Token(token_type, double_character, **args)
             char: str = self.current_char

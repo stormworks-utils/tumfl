@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 from tumfl.lexer import *
 
@@ -251,6 +250,11 @@ class TestNextToken(unittest.TestCase):
         self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
         self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
 
+    def test_double_character_token(self):
+        lex = Lexer('==')
+        self.assertEqual(lex.get_next_token(), Token(TokenType.EQUALS, "==", 0, 0))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 0, 0))
+
     def test_comment_string(self):
         lex = Lexer("'abc\\\ndef'--abc\n\"abab'\"--[==[\n\\\n]===]]==]'abc'")
         self.assertEqual(
@@ -288,3 +292,9 @@ class TestEllipsis(unittest.TestCase):
     def test_ellipsis(self):
         lex = Lexer("...")
         self.assertEqual(lex.get_next_token(), Token(TokenType.ELLIPSIS, "...", 0, 0))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 0, 0))
+        lex = Lexer("..a...b")
+        self.assertEqual(lex.get_next_token(), Token(TokenType.CONCAT, "..", 0, 0))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "a", 0, 0))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.ELLIPSIS, "...", 0, 0))
+        self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "b", 0, 0))
