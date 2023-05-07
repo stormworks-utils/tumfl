@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from abc import ABC
 
+from typing import TYPE_CHECKING
+
 from tumfl.Token import Token, TokenType
 
 from .ASTNode import ASTNode
-from .Expression.Name import Name
-from .Expression.Vararg import Vararg
-from .Statement.Block import Block
+
+if TYPE_CHECKING:
+    from .Expression.Name import Name
+    from .Expression.Vararg import Vararg
+    from .Statement.Block import Block
 
 
 class BaseFunctionDefinition(ASTNode, ABC):
