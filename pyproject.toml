@@ -30,8 +30,8 @@ dependencies = []
 dev = ["black", "isort", "pip-tools", "mypy", "flake8", "coverage", "pylint"]
 
 [project.urls]
-homepage = "https://github.com/stormworks-utils/sw_mc_lib"
-repository = "https://github.com/stormworks-utils/sw_mc_lib"
+homepage = "https://github.com/stormworks-utils/tumfl"
+repository = "https://github.com/stormworks-utils/tumfl"
 
 [tool.setuptools]
 packages = ["tumfl", "tumfl.AST", "tumfl.AST.Expression", "tumfl.AST.Statement"]
