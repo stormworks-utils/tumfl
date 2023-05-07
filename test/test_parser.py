@@ -216,9 +216,13 @@ class TestParser(unittest.TestCase):
         expected_result = Table(
             Token(TokenType.L_CURL, "{", 0, 0),
             [
-                NumberedTableField(Token(TokenType.NAME, "a", 0, 0), self.parse_name("a")),
-                NumberedTableField(Token(TokenType.NAME, "b", 0, 0), self.parse_name("b")),
-            ]
+                NumberedTableField(
+                    Token(TokenType.NAME, "a", 0, 0), self.parse_name("a")
+                ),
+                NumberedTableField(
+                    Token(TokenType.NAME, "b", 0, 0), self.parse_name("b")
+                ),
+            ],
         )
         self.assertEqual(parser._parse_table_constructor(), expected_result)
 
