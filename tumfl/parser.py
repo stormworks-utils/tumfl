@@ -340,7 +340,7 @@ class Parser:
         self._eat_token(TokenType.L_PAREN)
         parameters: list[Name | Vararg] = []
         if self.current_token.type == TokenType.NAME:
-            parameters.extend(self._parse_name_list())
+            parameters.extend(self._parse_name_list(leave_vararg=True))
             if self.current_token.type == TokenType.ELLIPSIS:
                 self._switch_hint("varargs")
                 parameters.append(Vararg.from_token(self.current_token))
@@ -349,6 +349,7 @@ class Parser:
             self._switch_hint("varargs")
             parameters.append(Vararg.from_token(self.current_token))
             self._eat_token()
+        self._eat_token(TokenType.R_PAREN)
         self._switch_hint("body")
         body: Block = self._parse_block()
         body.comment.extend(function_token.comment)
@@ -682,7 +683,9 @@ class Parser:
             return self._parse_var()
         self._error("Unexpected expression", self.current_token)
 
-    def _parse_name_list(self, first_name: Optional[Name] = None) -> list[Name]:
+    def _parse_name_list(
+        self, first_name: Optional[Name] = None, leave_vararg: bool = False
+    ) -> list[Name]:
         """
         Parse a list of names
 
@@ -694,6 +697,8 @@ class Parser:
         elif first_name:
             return names
         while True:
+            if self.current_token.type == TokenType.ELLIPSIS and leave_vararg:
+                return names
             names.append(self.__eat_name())
             if self.current_token.type == TokenType.COMMA:
                 self._eat_token()

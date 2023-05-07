@@ -1,6 +1,7 @@
 import unittest
 
 from tumfl.AST import *
+from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
 from tumfl.lexer import Lexer
 from tumfl.parser import Parser, ParserException
 from tumfl.Token import Token, TokenType
@@ -288,6 +289,46 @@ class TestParser(unittest.TestCase):
         parser = Parser("{a}")
         expected = Parser("{a}")._parse_table_constructor()
         self.assertEqual(parser._parse_exp(), expected)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_funcbody(self):
+        function_token = Token(TokenType.FUNCTION, "function", 0, 0)
+        parser = Parser("()end")
+        expected = BaseFunctionDefinition(
+            function_token, [], Block(Token(TokenType.END, "end", 0, 0), [], [])
+        )
+        parser._add_hint("function", "function")
+        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("(a,b)end")
+        expected = BaseFunctionDefinition(
+            function_token,
+            [self.parse_name("a"), self.parse_name("b")],
+            Block(Token(TokenType.END, "end", 0, 0), [], []),
+        )
+        parser._add_hint("function", "function")
+        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("(...)end")
+        expected = BaseFunctionDefinition(
+            function_token,
+            [Vararg.from_token(Token(TokenType.ELLIPSIS, "...", 0, 0))],
+            Block(Token(TokenType.END, "end", 0, 0), [], []),
+        )
+        parser._add_hint("function", "function")
+        self.assertEqual(parser._parse_funcbody(function_token), expected)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("(a,...)end")
+        expected = BaseFunctionDefinition(
+            function_token,
+            [
+                self.parse_name("a"),
+                Vararg.from_token(Token(TokenType.ELLIPSIS, "...", 0, 0)),
+            ],
+            Block(Token(TokenType.END, "end", 0, 0), [], []),
+        )
+        parser._add_hint("function", "function")
+        self.assertEqual(parser._parse_funcbody(function_token), expected)
         self.assertEqual(len(parser.context_hints), 0)
 
     def test_assign(self):
