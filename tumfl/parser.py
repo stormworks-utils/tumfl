@@ -196,7 +196,7 @@ class Parser:
         """
         Parse a repeat until loop
 
-        repeat_stmt: REPEAT block UNTIL exp END
+        repeat_stmt: REPEAT block UNTIL exp
         """
         repeat_token: Token = self.current_token
         self._add_hint("repeat", "block")
@@ -207,7 +207,6 @@ class Parser:
         self._switch_hint("condition")
         self._eat_token(TokenType.UNTIL)
         condition: Expression = self._parse_exp()
-        self._eat_token(TokenType.END)
         self._remove_hint()
         return Repeat(repeat_token, condition, body)
 
