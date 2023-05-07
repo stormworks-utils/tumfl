@@ -484,3 +484,29 @@ class TestParser(unittest.TestCase):
         parser = Parser("local and")
         with self.assertRaises(ParserException):
             parser.parse_chunk()
+
+    def test_parse_function(self):
+        parser = Parser("function a ()end")
+        expected_tree = self.get_chunk(
+            FunctionDefinition(
+                Token(TokenType.FUNCTION, "function", 0, 0),
+                [self.parse_name("a")],
+                None,
+                [],
+                Block(Token(TokenType.END, "end", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("function a.b:c ()end")
+        expected_tree = self.get_chunk(
+            FunctionDefinition(
+                Token(TokenType.FUNCTION, "function", 0, 0),
+                [self.parse_name("a"), self.parse_name("b")],
+                self.parse_name("c"),
+                [],
+                Block(Token(TokenType.END, "end", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)

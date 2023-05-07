@@ -319,7 +319,7 @@ class Parser:
         self._add_hint("function", "name")
         self._eat_token(TokenType.FUNCTION)
         names: list[Name] = [self.__eat_name()]
-        while self.current_token.type == TokenType.COMMA:
+        while self.current_token.type == TokenType.DOT:
             self._eat_token()
             names.append(self.__eat_name())
         method: Optional[Name] = None
