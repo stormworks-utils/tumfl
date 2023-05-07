@@ -250,6 +250,26 @@ class TestParser(unittest.TestCase):
         parser = Parser('{a,"b"}')
         self.assertEqual(parser._parse_args(), [table_result])
 
+    def test_parse_names(self):
+        parser = Parser("a b")
+        expected_names = [self.parse_name("a")]
+        self.assertEqual(parser._parse_name_list(), expected_names)
+        parser = Parser("a, b")
+        expected_names = [self.parse_name("a"), self.parse_name("b")]
+        self.assertEqual(parser._parse_name_list(), expected_names)
+        parser = Parser("b")
+        expected_names = [self.parse_name("a")]
+        self.assertEqual(parser._parse_name_list(self.parse_name("a")), expected_names)
+        parser = Parser(",b")
+        expected_names = [self.parse_name("a"), self.parse_name("b")]
+        self.assertEqual(parser._parse_name_list(self.parse_name("a")), expected_names)
+        parser = Parser("a,")
+        with self.assertRaises(ParserException):
+            parser._parse_name_list()
+        parser = Parser("a, 1")
+        with self.assertRaises(ParserException):
+            parser._parse_name_list()
+
     def test_assign(self):
         parser = Parser('a = "bcd"')
         expected_tree = Chunk(

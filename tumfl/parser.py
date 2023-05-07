@@ -691,7 +691,9 @@ class Parser:
         names: list[Name] = [first_name] if first_name else []
         if first_name and self.current_token.type == TokenType.COMMA:
             self._eat_token()
-        while self.current_token.type == TokenType.NAME:
+        elif first_name:
+            return names
+        while True:
             names.append(self.__eat_name())
             if self.current_token.type == TokenType.COMMA:
                 self._eat_token()
