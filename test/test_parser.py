@@ -127,6 +127,9 @@ class TestParser(unittest.TestCase):
         parser = Parser("a,b+")
         with self.assertRaises(ParserException):
             parser.parse_chunk()
+        parser = Parser("a=1\nb,c+")
+        with self.assertRaises(ParserException):
+            parser.parse_chunk()
 
     def test_parse_var(self):
         parser = Parser('a["b"].d')
