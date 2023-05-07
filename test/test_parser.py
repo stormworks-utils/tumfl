@@ -77,6 +77,21 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
+        parser = Parser("2^-2+s")
+        expected_tree = BinOp.from_token(
+            Token(TokenType.PLUS, "+", 0, 0),
+            BinOp.from_token(
+                Token(TokenType.EXPONENT, "#", 0, 0),
+                self.parse_number("2"),
+                UnOp.from_token(
+                    Token(TokenType.MINUS, "-", 0, 0), self.parse_number("2")
+                ),
+            ),
+            self.parse_name("s"),
+        )
+        self.assertEqual(parser._parse_exp(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_associativity(self):
         parser = Parser("1^2^3")

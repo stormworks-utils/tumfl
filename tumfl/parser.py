@@ -502,7 +502,7 @@ class Parser:
         return node
 
     def __parse_right_associative_binop(
-        self, type: TokenType, base: Callable[[], Expression]
+        self, type: TokenType, base: Callable[[], Expression], operand: Callable[[], Expression]
     ) -> Expression:
         """Parse a generic right associative binop"""
         nodes: list[Expression] = [base()]
@@ -510,7 +510,7 @@ class Parser:
         while self.current_token.type == type:
             tokens.append(self.current_token)
             self._eat_token()
-            nodes.append(base())
+            nodes.append(operand())
         node: Expression = nodes[-1]
         for i in range(len(nodes) - 2, -1, -1):
             node = BinOp.from_token(tokens[i], nodes[i], node)
@@ -601,7 +601,7 @@ class Parser:
         concat_exp: add_exp {CONCAT add_exp}
         """
         return self.__parse_right_associative_binop(
-            TokenType.CONCAT, self._parse_add_exp
+            TokenType.CONCAT, self._parse_add_exp, self._parse_concat_exp
         )
 
     def _parse_add_exp(self) -> Expression:
@@ -654,7 +654,7 @@ class Parser:
         pow_exp: atom {EXPONENT atom}
         """
         return self.__parse_right_associative_binop(
-            TokenType.EXPONENT, self._parse_atom
+            TokenType.EXPONENT, self._parse_atom, self._parse_un_exp
         )
 
     def _parse_atom(self) -> Expression:
