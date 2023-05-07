@@ -780,6 +780,17 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
+        parser = Parser("do ;return ; end")
+        expected_tree = self.get_chunk(
+            Block(
+                Token(TokenType.DO, "do", 0, 0),
+                [Semicolon(Token(TokenType.SEMICOLON, ";", 0, 0))],
+                [],
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_unexpected_statement(self):
         parser = Parser("+")

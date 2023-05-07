@@ -98,7 +98,8 @@ class Parser:
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:
             self._eat_token(TokenType.RETURN)
-            block.returns = self._parse_exp_list()
+            if self.current_token.type != TokenType.SEMICOLON:
+                block.returns = self._parse_exp_list()
             if self.current_token.type == TokenType.SEMICOLON:
                 self._eat_token()
         if expect_end:
