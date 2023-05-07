@@ -676,7 +676,7 @@ class Parser:
             self._eat_token()
             base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
             return ExpFunctionDefinition.from_base_definition(base_function)
-        elif token.type == TokenType.R_CURL:
+        elif token.type == TokenType.L_CURL:
             return self._parse_table_constructor()
         elif token.type in (TokenType.L_PAREN, TokenType.NAME):
             return self._parse_var()

@@ -275,6 +275,11 @@ class TestParser(unittest.TestCase):
         expected = Vararg(Token(TokenType.ELLIPSIS, "...", 0, 0))
         self.assertEqual(parser._parse_exp(), expected)
 
+    def test_parse_table_expr(self):
+        parser = Parser("{a}")
+        expected = Parser("{a}")._parse_table_constructor()
+        self.assertEqual(parser._parse_exp(), expected)
+
     def test_assign(self):
         parser = Parser('a = "bcd"')
         expected_tree = Chunk(
