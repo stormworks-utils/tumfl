@@ -607,3 +607,15 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_repeat(self):
+        parser = Parser("repeat until 1 end")
+        expected_tree = self.get_chunk(
+            Repeat(
+                Token(TokenType.REPEAT, "repeat", 0, 0),
+                self.parse_number("1"),
+                Block(Token(TokenType.REPEAT, "repeat", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
