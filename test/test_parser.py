@@ -69,7 +69,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
-        parser = Parser("#'a'")
+        parser = Parser("\n#'a'")
         expected_tree = UnOp.from_token(
             Token(TokenType.HASH, "#", 0, 0),
             self.parse_string("a"),
@@ -138,7 +138,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_len_operator(self):
-        parser = Parser("#a + 1")
+        parser = Parser("\n#a + 1")
         expected_tree = BinOp.from_token(
             Token(TokenType.PLUS, "+", 0, 0),
             UnOp.from_token(
