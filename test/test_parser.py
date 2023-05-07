@@ -534,3 +534,36 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_numeric_for(self):
+        parser = Parser("for a=1,b do end")
+        expected_tree = self.get_chunk(
+            NumericFor(
+                Token(TokenType.FOR, "for", 0, 0),
+                self.parse_name("a"),
+                self.parse_number("1"),
+                self.parse_name("b"),
+                None,
+                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("for a=1,b,3 do end")
+        expected_tree = self.get_chunk(
+            NumericFor(
+                Token(TokenType.FOR, "for", 0, 0),
+                self.parse_name("a"),
+                self.parse_number("1"),
+                self.parse_name("b"),
+                self.parse_number("3"),
+                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_unknown_for(self):
+        parser = Parser("for name and")
+        with self.assertRaises(ParserException):
+            parser.parse_chunk()
