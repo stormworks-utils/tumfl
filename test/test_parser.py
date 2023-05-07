@@ -479,3 +479,8 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_unknown_local(self):
+        parser = Parser("local and")
+        with self.assertRaises(ParserException):
+            parser.parse_chunk()
