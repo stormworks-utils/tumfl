@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
 from tumfl.AST.Statement.Block import Block
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .Expression import Expression
 from .Name import Name

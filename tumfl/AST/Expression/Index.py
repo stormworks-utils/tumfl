@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .Expression import Expression
 from .Variable import Variable

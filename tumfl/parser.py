@@ -277,9 +277,10 @@ class Parser:
         self._remove_hint()
         if self.current_token.type == TokenType.ASSIGN:
             return self._parse_numeric_for(for_token, first_name)
-        elif self.current_token.type in (TokenType.COMMA, TokenType.IN):
+        if self.current_token.type in (TokenType.COMMA, TokenType.IN):
             return self._parse_iterative_for(for_token, first_name)
         self._error("unexpected for condition", self.current_token)
+        assert False
 
     def _parse_numeric_for(self, for_token: Token, name: Name) -> NumericFor:
         """
@@ -383,9 +384,10 @@ class Parser:
         self._eat_token(TokenType.LOCAL)
         if self.current_token.type == TokenType.FUNCTION:
             return self._parse_local_function(local_token)
-        elif self.current_token.type == TokenType.NAME:
+        if self.current_token.type == TokenType.NAME:
             return self._parse_local_assignment(local_token)
         self._error("Unexpected symbol after local", self.current_token)
+        assert False
 
     def _parse_local_function(self, local_token: Token) -> LocalFunctionDefinition:
         """
@@ -467,11 +469,11 @@ class Parser:
         first_var: Expression = self._parse_var()
         if self.current_token.type in (TokenType.COMMA, TokenType.ASSIGN):
             return self._parse_assignment(first_token, first_var)
-        elif isinstance(first_var, ExpFunctionCall):
+        if isinstance(first_var, ExpFunctionCall):
             return FunctionCall(
                 first_var.token, first_var.function, first_var.arguments
             )
-        elif isinstance(first_var, ExpMethodInvocation):
+        if isinstance(first_var, ExpMethodInvocation):
             return MethodInvocation(
                 first_var.token,
                 first_var.function,
@@ -677,32 +679,33 @@ class Parser:
         if token.type == TokenType.NIL:
             self._eat_token()
             return Nil.from_token(token)
-        elif token.type == TokenType.TRUE:
+        if token.type == TokenType.TRUE:
             self._eat_token()
             return Boolean.from_token(token)
-        elif token.type == TokenType.FALSE:
+        if token.type == TokenType.FALSE:
             self._eat_token()
             return Boolean.from_token(token)
-        elif token.type == TokenType.NUMBER:
+        if token.type == TokenType.NUMBER:
             self._eat_token()
             return Number.from_token(token)
-        elif token.type == TokenType.STRING:
+        if token.type == TokenType.STRING:
             self._eat_token()
             return String.from_token(token)
-        elif token.type == TokenType.ELLIPSIS:
+        if token.type == TokenType.ELLIPSIS:
             self._eat_token()
             return Vararg.from_token(token)
-        elif token.type == TokenType.FUNCTION:
+        if token.type == TokenType.FUNCTION:
             function_token: Token = self.current_token
             self._add_hint("function expression", "definition")
             self._eat_token()
             base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
             return ExpFunctionDefinition.from_base_definition(base_function)
-        elif token.type == TokenType.L_CURL:
+        if token.type == TokenType.L_CURL:
             return self._parse_table_constructor()
-        elif token.type in (TokenType.L_PAREN, TokenType.NAME):
+        if token.type in (TokenType.L_PAREN, TokenType.NAME):
             return self._parse_var()
         self._error("Unexpected expression", self.current_token)
+        assert False
 
     def _parse_name_list(
         self, first_name: Optional[Name] = None, leave_vararg: bool = False
@@ -836,7 +839,7 @@ class Parser:
             value = self._parse_exp()
             self._remove_hint()
             return ExplicitTableField(token, at, value)
-        elif (
+        if (
             self.current_token.type == TokenType.NAME
             and self.next_token.type == TokenType.ASSIGN
         ):

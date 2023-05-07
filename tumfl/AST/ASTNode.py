@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, Generator, Optional
 
 from tumfl.Token import Token
@@ -29,7 +29,7 @@ class ASTNode(ABC):
     def __dir(self) -> Generator[str, None, None]:
         return (
             i
-            for i in self.__dir__()
+            for i in dir(self)
             if not i.startswith("__")
             # ignore "token" for comparison (and parent check)
             and i not in ["replace", "parent", "parent_class", "var", "token"]

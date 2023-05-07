@@ -147,6 +147,7 @@ class Lexer:
             inner_string += self.current_char
             self.advance()
         self.error("long brackets never closed", line, column)
+        assert False
 
     def skip_comment(self) -> None:
         """Skip a comment (long or short)"""
@@ -360,8 +361,7 @@ class Lexer:
                 if self.current_char == ".":
                     self.advance()
                     return Token(TokenType.ELLIPSIS, "...", **args)
-                else:
-                    return Token(TokenType.CONCAT, "..", **args)
+                return Token(TokenType.CONCAT, "..", **args)
 
             if peek := self.peek():
                 double_character: str = self.current_char + peek

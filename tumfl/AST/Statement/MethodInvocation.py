@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from tumfl.AST.Expression import Expression
 from tumfl.AST.Expression.Name import Name
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .Statement import Statement
 

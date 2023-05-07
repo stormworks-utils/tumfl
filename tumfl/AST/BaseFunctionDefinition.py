@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
 
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .ASTNode import ASTNode
 

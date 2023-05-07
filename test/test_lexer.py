@@ -179,9 +179,9 @@ class TestGetString(unittest.TestCase):
         self.assertEqual(lex.current_char, None)
 
     def test_skip_whitespace(self):
-        lex = Lexer("' \z    \n\ta'")
+        lex = Lexer("' \\z    \n\ta'")
         self.assertEqual(lex.get_string(), " a")
-        lex = Lexer("'\za'")
+        lex = Lexer("'\\za'")
         self.assertEqual(lex.get_string(), "a")
 
     def test_other_quote(self):

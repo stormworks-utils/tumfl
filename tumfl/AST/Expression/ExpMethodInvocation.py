@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
-
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .Expression import Expression
 from .Name import Name

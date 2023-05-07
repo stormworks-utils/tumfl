@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 
 from tumfl.AST.ASTNode import ASTNode
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .Expression import Expression
 from .Name import Name
@@ -11,8 +11,6 @@ from .Name import Name
 
 class TableField(ASTNode, ABC):
     """Base class for all table fields"""
-
-    ...
 
 
 class ExplicitTableField(TableField):

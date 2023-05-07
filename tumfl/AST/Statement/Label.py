@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tumfl.AST.Expression.Name import Name
-from tumfl.Token import Token, TokenType
+from tumfl.Token import Token
 
 from .Statement import Statement
 

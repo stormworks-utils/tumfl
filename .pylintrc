@@ -1,0 +1,32 @@
+[MAIN]
+
+ignore=.venv,test
+
+jobs=0
+
+suggestion-mode=yes
+
+py-version = 3.10.0
+
+[MESSAGES CONTROL]
+
+disable=
+    line-too-long,
+    invalid-name,
+    redefined-builtin,
+    missing-module-docstring,
+    missing-function-docstring,
+    missing-class-docstring,
+    too-many-branches,
+    too-many-statements,
+    too-many-return-statements,
+    wildcard-import,
+    unused-wildcard-import,
+
+[DESIGN]
+
+max-args=12
+
+max-attributes=10
+
+min-public-methods=1
