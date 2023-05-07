@@ -97,6 +97,8 @@ class Parser:
             TokenType.END,
             TokenType.RETURN,
             TokenType.UNTIL,
+            TokenType.ELSEIF,
+            TokenType.ELSE,
         ):
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:

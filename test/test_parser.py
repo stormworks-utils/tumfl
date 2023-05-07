@@ -567,3 +567,43 @@ class TestParser(unittest.TestCase):
         parser = Parser("for name and")
         with self.assertRaises(ParserException):
             parser.parse_chunk()
+
+    def test_parse_if(self):
+        parser = Parser("if 1 then end")
+        expected_tree = self.get_chunk(
+            If(
+                Token(TokenType.IF, "if", 0, 0),
+                self.parse_number("1"),
+                Block(Token(TokenType.THEN, "then", 0, 0), [], []),
+                None,
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("if 1 then else end")
+        expected_tree = self.get_chunk(
+            If(
+                Token(TokenType.IF, "if", 0, 0),
+                self.parse_number("1"),
+                Block(Token(TokenType.THEN, "then", 0, 0), [], []),
+                Block(Token(TokenType.ELSE, "else", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("if 1 then elseif 2 then else end")
+        expected_tree = self.get_chunk(
+            If(
+                Token(TokenType.IF, "if", 0, 0),
+                self.parse_number("1"),
+                Block(Token(TokenType.THEN, "then", 0, 0), [], []),
+                If(
+                    Token(TokenType.ELSEIF, "elseif", 0, 0),
+                    self.parse_number("2"),
+                    Block(Token(TokenType.ELSEIF, "elseif", 0, 0), [], []),
+                    Block(Token(TokenType.ELSE, "else", 0, 0), [], []),
+                ),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
