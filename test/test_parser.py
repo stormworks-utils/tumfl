@@ -510,3 +510,27 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_iterative_for(self):
+        parser = Parser("for a in 2 do end")
+        expected_tree = self.get_chunk(
+            IterativeFor(
+                Token(TokenType.FOR, "for", 0, 0),
+                [self.parse_name("a")],
+                [self.parse_number("2")],
+                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        parser = Parser("for a, b in 1, 2 do end")
+        expected_tree = self.get_chunk(
+            IterativeFor(
+                Token(TokenType.FOR, "for", 0, 0),
+                [self.parse_name("a"), self.parse_name("b")],
+                [self.parse_number("1"), self.parse_number("2")],
+                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
