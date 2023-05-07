@@ -139,7 +139,9 @@ class Parser:
 
     def _parse_break(self) -> Break:
         """Parse a break statement"""
-        return Break(self.current_token)
+        break_token: Token = self.current_token
+        self._eat_token(TokenType.BREAK)
+        return Break(break_token)
 
     def __eat_name(self) -> Name:
         """Eat a name token and return the string value"""

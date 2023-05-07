@@ -619,3 +619,37 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_while(self):
+        parser = Parser("while 1 do end")
+        expected_tree = self.get_chunk(
+            While(
+                Token(TokenType.WHILE, "while", 0, 0),
+                self.parse_number("1"),
+                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+            )
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_label(self):
+        parser = Parser("::label::")
+        expected_tree = self.get_chunk(
+            Label(Token(TokenType.LABEL_BORDER, "::", 0, 0), self.parse_name("label"))
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_goto(self):
+        parser = Parser("goto label")
+        expected_tree = self.get_chunk(
+            Goto(Token(TokenType.GOTO, "goto", 0, 0), self.parse_name("label"))
+        )
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+
+    def test_parse_break(self):
+        parser = Parser("break")
+        expected_tree = self.get_chunk(Break(Token(TokenType.BREAK, "break", 0, 0)))
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
