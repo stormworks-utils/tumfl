@@ -331,6 +331,16 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser._parse_funcbody(function_token), expected)
         self.assertEqual(len(parser.context_hints), 0)
 
+    def test_parse_func_expr(self):
+        parser = Parser("function()end")
+        expected = ExpFunctionDefinition(
+            Token(TokenType.FUNCTION, "function", 0, 0),
+            [],
+            Block(Token(TokenType.END, "end", 0, 0), [], []),
+        )
+        self.assertEqual(parser._parse_exp(), expected)
+        self.assertEqual(len(parser.context_hints), 0)
+
     def test_assign(self):
         parser = Parser('a = "bcd"')
         expected_tree = Chunk(
