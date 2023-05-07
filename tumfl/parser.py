@@ -7,6 +7,7 @@ from .AST import *
 from .AST.BaseFunctionDefinition import BaseFunctionDefinition
 from .lexer import Lexer
 from .Token import Token, TokenType
+from .error import ParserException
 
 
 class Parser:
@@ -40,7 +41,7 @@ class Parser:
                 ),
                 file=sys.stderr,
             )
-        raise ValueError(message)
+        raise ParserException(message, self.context_hints, token)
 
     def _get_token_at_pos(self, pos: int) -> Token:
         """Gets the token at the position, or EOF if the position is greater than the end"""

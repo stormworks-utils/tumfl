@@ -1,6 +1,7 @@
 import sys
 from typing import Dict, List, NoReturn, Optional, Tuple, TypedDict
 
+from .error import LexerException
 from .Token import Token, TokenType
 
 RESERVED_KEYWORDS: Dict[str, TokenType] = {
@@ -69,7 +70,7 @@ class Lexer:
         print(self.text_by_line[current_line], file=sys.stderr)
         print(" " * current_column + "^", file=sys.stderr)
         print(message, file=sys.stderr)
-        raise ValueError(message)
+        raise LexerException(message, current_line, current_column)
 
     def get_token_args(self) -> TokenArgs:
         comment: list[str] = self.comments[:]

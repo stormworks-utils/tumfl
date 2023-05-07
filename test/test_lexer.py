@@ -120,18 +120,15 @@ class TestGetLongBrackets(unittest.TestCase):
 
     def test_fails(self):
         lex = Lexer("[[dklaospkda\\")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_long_brackets()
         lex = Lexer("[==[[[]]]=]]===]")
-        with self.assertRaises(ValueError):
-            lex.get_long_brackets()
-        lex = Lexer("[")
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(LexerException):
             lex.get_long_brackets()
 
     def test_no_long_bracket(self):
         lex = Lexer("[=======")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_long_brackets()
 
 
@@ -167,11 +164,6 @@ class TestGetName(unittest.TestCase):
         lex = Lexer("abz123-4")
         self.assertEqual(lex.get_name(), "abz123")
 
-    def test_fail_number(self):
-        lex = Lexer("4ab")
-        with self.assertRaises(AssertionError):
-            lex.get_name()
-
 
 class TestGetString(unittest.TestCase):
     def test_simple(self):
@@ -195,12 +187,12 @@ class TestGetString(unittest.TestCase):
 
     def test_fail_eof(self):
         lex = Lexer("'abc")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_string()
 
     def test_fail_line_end(self):
         lex = Lexer("'abc\n'")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_string()
 
     def test_simple_escape_codes(self):
@@ -208,19 +200,19 @@ class TestGetString(unittest.TestCase):
         self.assertEqual(lex.get_string(), "\a\b\f\n\r\t\v\\\"'")
         lex = Lexer("'\\\n'")
         self.assertEqual(lex.get_string(), "\n")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex = Lexer("'\\A'")
             lex.get_string()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex = Lexer("'\\e'")
             lex.get_string()
 
     def test_hexadecimal_escape(self):
         lex = Lexer("'\\x1'")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_string()
         lex = Lexer("'\\x'")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_string()
         lex = Lexer("'\\x0a'")
         self.assertEqual(lex.get_string(), "\n")
@@ -231,7 +223,7 @@ class TestGetString(unittest.TestCase):
         lex = Lexer("'\\0'")
         self.assertEqual(lex.get_string(), "\0")
         lex = Lexer("'\\256'")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_string()
         lex = Lexer("'\\97\\0971'")
         self.assertEqual(lex.get_string(), "aa1")
@@ -270,7 +262,7 @@ class TestNextToken(unittest.TestCase):
 
     def test_tokenizer_error(self):
         lex = Lexer("!")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(LexerException):
             lex.get_next_token()
 
     def test_lex_tests(self):

@@ -2,7 +2,7 @@ import unittest
 
 from tumfl.AST import *
 from tumfl.lexer import Lexer
-from tumfl.parser import Parser
+from tumfl.parser import Parser, ParserException
 from tumfl.Token import Token, TokenType
 
 
@@ -95,7 +95,7 @@ class TestParser(unittest.TestCase):
 
     def test_error(self):
         parser = Parser("1+")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ParserException):
             parser._parse_exp()
 
     def test_unary_expr(self):
@@ -125,7 +125,7 @@ class TestParser(unittest.TestCase):
 
     def test_wrong_token(self):
         parser = Parser("a,b+")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ParserException):
             parser.parse_chunk()
 
     def test_parse_var(self):
