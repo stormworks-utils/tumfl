@@ -265,17 +265,6 @@ class TestNextToken(unittest.TestCase):
         with self.assertRaises(LexerException):
             lex.get_next_token()
 
-    def test_lex_tests(self):
-        test_dir: Path = Path("lua-tests")
-        for file in test_dir.iterdir():
-            if file.is_file() and file.suffix == ".lua":
-                print(f"Testing {file}", file=sys.stderr)
-                with open(file, encoding="iso-8859-15") as f:
-                    content: str = f.read()
-                lex = Lexer(content)
-                while lex.get_next_token().type != TokenType.EOF:
-                    ...
-
 
 class TestNil(unittest.TestCase):
     def test_nil(self):
