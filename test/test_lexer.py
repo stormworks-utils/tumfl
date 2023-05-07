@@ -282,3 +282,9 @@ class TestComment(unittest.TestCase):
         lex: Lexer = Lexer("--some comment\n--another comment\nabc")
         tok: Token = lex.get_next_token()
         self.assertEqual(tok.comment, ["some comment", "another comment"])
+
+
+class TestEllipsis(unittest.TestCase):
+    def test_ellipsis(self):
+        lex = Lexer("...")
+        self.assertEqual(lex.get_next_token(), Token(TokenType.ELLIPSIS, "...", 0, 0))

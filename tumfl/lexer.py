@@ -355,6 +355,14 @@ class Lexer:
                 string = self.get_long_brackets()
                 return Token(TokenType.STRING, string, **args)
 
+            if self.current_char == "." and self.peek() == ".":
+                self.advance()
+                if self.peek() == ".":
+                    self.advance()
+                    return Token(TokenType.ELLIPSIS, "...", **args)
+                else:
+                    return Token(TokenType.CONCAT, "..", **args)
+
             if peek := self.peek():
                 double_character: str = self.current_char + peek
                 if token_type := SYMBOLS.get(double_character):
