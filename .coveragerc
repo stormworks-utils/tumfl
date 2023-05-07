@@ -2,7 +2,7 @@
 [run]
 branch = True
 command_line = -m unittest discover
-omit = test/*
+omit = test/*, extensive_testing/*
 
 [report]
 # Regexes for lines to exclude from consideration
