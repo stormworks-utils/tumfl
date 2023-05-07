@@ -270,6 +270,11 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParserException):
             parser._parse_name_list()
 
+    def test_parse_vararg(self):
+        parser = Parser("...")
+        expected = Vararg(Token(TokenType.ELLIPSIS, "...", 0, 0))
+        self.assertEqual(parser._parse_exp(), expected)
+
     def test_assign(self):
         parser = Parser('a = "bcd"')
         expected_tree = Chunk(
