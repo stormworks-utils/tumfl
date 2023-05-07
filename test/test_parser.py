@@ -263,6 +263,16 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser._parse_table_constructor(), expected_result)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
+        parser = Parser("{f'alo'..'xixi'}")
+        expected_tree = Table(Token(TokenType.L_CURL, "{", 0, 0), [NumberedTableField(Token(TokenType.NAME, "f", 0, 0),
+        BinOp.from_token(
+            Token(TokenType.CONCAT, "..", 0, 0),
+            ExpFunctionCall(Token(TokenType.FUNCTION, "function", 0, 0), self.parse_name("f"), [self.parse_string("alo")]),
+            self.parse_string("xixi"),
+        ))])
+        self.assertEqual(parser._parse_table_constructor(), expected_tree)
+        self.assertEqual(len(parser.context_hints), 0)
+        self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
     def test_parse_args(self):
         parser = Parser("()")

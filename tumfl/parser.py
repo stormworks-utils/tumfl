@@ -26,6 +26,7 @@ class Parser:
         self.lexer: Lexer = Lexer(self.chunk)
         self.pos: int = 0
         self.current_token: Token = self.lexer.get_next_token()
+        self.next_token: Token = self.lexer.get_next_token()
         self.context_hints: list[Hint] = []
 
     def _error(self, message: str, token: Token) -> NoReturn:
@@ -56,7 +57,8 @@ class Parser:
         if token_type:
             self._assert(token_type)
         self.pos += 1
-        self.current_token = self.lexer.get_next_token()
+        self.current_token = self.next_token
+        self.next_token = self.lexer.get_next_token()
 
     def _add_hint(self, where: str, what: str) -> None:
         """Add a context hint for error messages"""
@@ -828,18 +830,14 @@ class Parser:
             value = self._parse_exp()
             self._remove_hint()
             return ExplicitTableField(token, at, value)
-        elif self.current_token.type == TokenType.NAME:
+        elif self.current_token.type == TokenType.NAME and self.next_token.type == TokenType.ASSIGN:
             self._add_hint("named table field", "name")
             name: Name = self.__eat_name()
             self._switch_hint("value expression")
-            if self.current_token.type == TokenType.ASSIGN:
-                self._eat_token()
-                value = self._parse_exp()
-                self._remove_hint()
-                return NamedTableField(token, name, value)
-            value = self._parse_or_ignore_var_terminal(name)
+            self._eat_token(TokenType.ASSIGN)
+            value = self._parse_exp()
             self._remove_hint()
-            return NumberedTableField(token, value)
+            return NamedTableField(token, name, value)
         self._add_hint("numbered table field", "expression")
         value = self._parse_exp()
         self._remove_hint()
