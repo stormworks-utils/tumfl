@@ -756,11 +756,9 @@ class TestParser(unittest.TestCase):
             FunctionCall(
                 Token(TokenType.NAME, "assert", 0, 0),
                 ExpFunctionCall(
-                    Token(TokenType.NAME, "assert", 0, 0),
-                    self.parse_name("assert"),
-                    []
+                    Token(TokenType.NAME, "assert", 0, 0), self.parse_name("assert"), []
                 ),
-                []
+                [],
             )
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
