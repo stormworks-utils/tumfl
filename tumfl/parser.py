@@ -75,23 +75,16 @@ class Parser:
 
         chunk: block
         """
-        block: Block = self._parse_block()
+        block: Block = self._parse_block(self.current_token)
         return Chunk(block.token, block.statements, block.returns)
 
-    def _parse_block(self) -> Block:
+    def _parse_block(self, block_token: Token, expect_end: bool = False) -> Block:
         """
         Parse a block
 
         block: [DO | REPEAT | THEN | ELSE] {stat} [RETURN explist [SEMICOLON]] [END]
         """
-        block: Block = Block(self.current_token, [], [])
-        if self.current_token in (
-            TokenType.DO,
-            TokenType.REPEAT,
-            TokenType.THEN,
-            TokenType.ELSE,
-        ):
-            self._eat_token()
+        block: Block = Block(block_token, [], [])
         while self.current_token.type not in (
             TokenType.EOF,
             TokenType.END,
@@ -104,8 +97,10 @@ class Parser:
         if self.current_token.type == TokenType.RETURN:
             self._eat_token(TokenType.RETURN)
             block.returns = self._parse_exp_list()
-        if self.current_token.type == TokenType.END:
-            self._eat_token()
+            if self.current_token.type == TokenType.SEMICOLON:
+                self._eat_token()
+        if expect_end:
+            self._eat_token(TokenType.END)
         return block
 
     def _parse_statement(self) -> Statement:
@@ -120,7 +115,9 @@ class Parser:
             case TokenType.LABEL_BORDER:
                 return self._parse_label()
             case TokenType.DO:
-                return self._parse_block()
+                block_token: Token = self.current_token
+                self._eat_token()
+                return self._parse_block(block_token, True)
             case TokenType.WHILE:
                 return self._parse_while()
             case TokenType.REPEAT:
@@ -188,8 +185,9 @@ class Parser:
         self._eat_token(TokenType.WHILE)
         condition: Expression = self._parse_exp()
         self._switch_hint("block")
+        block_token: Token = self.current_token
         self._eat_token(TokenType.DO)
-        body: Block = self._parse_block()
+        body: Block = self._parse_block(block_token, True)
         body.comment.extend(while_token.comment)
         self._remove_hint()
         return While(while_token, condition, body)
@@ -202,8 +200,9 @@ class Parser:
         """
         repeat_token: Token = self.current_token
         self._add_hint("repeat", "block")
+        block_token: Token = self.current_token
         self._eat_token(TokenType.REPEAT)
-        body: Block = self._parse_block()
+        body: Block = self._parse_block(block_token)
         body.comment.extend(repeat_token.comment)
         self._switch_hint("condition")
         self._eat_token(TokenType.UNTIL)
@@ -223,8 +222,9 @@ class Parser:
         self._eat_token(TokenType.IF)
         if_cond: Expression = self._parse_exp()
         self._switch_hint("if block")
+        block_token: Token = self.current_token
         self._eat_token(TokenType.THEN)
-        if_block: Block = self._parse_block()
+        if_block: Block = self._parse_block(block_token)
         if_block.comment.extend(if_token.comment)
         elseif_tokens: list[Token] = []
         elseif_conditions: list[Expression] = []
@@ -235,13 +235,16 @@ class Parser:
             self._eat_token()
             elseif_conditions.append(self._parse_exp())
             self._switch_hint("elseif block")
+            block_token = self.current_token
             self._eat_token(TokenType.THEN)
-            elseif_blocks.append(self._parse_block())
+            elseif_blocks.append(self._parse_block(block_token))
         else_block: Optional[Block] = None
         if self.current_token.type == TokenType.ELSE:
             self._switch_hint("else block")
+            block_token = self.current_token
             self._eat_token()
-            else_block = self._parse_block()
+            else_block = self._parse_block(block_token)
+        self._eat_token(TokenType.END)
         self._remove_hint()
         assert len(elseif_conditions) == len(elseif_blocks) and len(
             elseif_blocks
@@ -289,8 +292,9 @@ class Parser:
             self._eat_token()
             step = self._parse_exp()
         self._switch_hint("block")
+        block_token: Token = self.current_token
         self._eat_token(TokenType.DO)
-        body: Block = self._parse_block()
+        body: Block = self._parse_block(block_token, True)
         body.comment.extend(for_token.comment)
         self._remove_hint()
         return NumericFor(for_token, name, start, stop, step, body)
@@ -307,8 +311,9 @@ class Parser:
         self._eat_token(TokenType.IN)
         expressions: list[Expression] = self._parse_exp_list()
         self._switch_hint("block")
+        block_token: Token = self.current_token
         self._eat_token(TokenType.DO)
-        body: Block = self._parse_block()
+        body: Block = self._parse_block(block_token, True)
         body.comment.extend(for_token.comment)
         self._remove_hint()
         return IterativeFor(for_token, names, expressions, body)
@@ -353,9 +358,10 @@ class Parser:
             self._switch_hint("varargs")
             parameters.append(Vararg.from_token(self.current_token))
             self._eat_token()
-        self._eat_token(TokenType.R_PAREN)
+        block_token: Token = self.current_token
         self._switch_hint("body")
-        body: Block = self._parse_block()
+        self._eat_token(TokenType.R_PAREN)
+        body: Block = self._parse_block(block_token, True)
         body.comment.extend(function_token.comment)
         self._remove_hint()
         return BaseFunctionDefinition(function_token, parameters, body)
@@ -854,6 +860,7 @@ class Parser:
             expressions.append(self._parse_table_constructor())
         elif self.current_token.type == TokenType.STRING:
             expressions.append(String.from_token(self.current_token))
+            self._eat_token()
         else:
             assert False, "unreachable line"
         self._remove_hint()
