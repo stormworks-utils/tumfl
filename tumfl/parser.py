@@ -5,9 +5,9 @@ from typing import Callable, NoReturn, Optional
 
 from .AST import *
 from .AST.BaseFunctionDefinition import BaseFunctionDefinition
+from .error import ParserException
 from .lexer import Lexer
 from .Token import Token, TokenType
-from .error import ParserException
 
 
 class Parser:
