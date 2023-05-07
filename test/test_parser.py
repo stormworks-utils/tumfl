@@ -21,6 +21,10 @@ class TestParser(unittest.TestCase):
     def parse_string(string: str) -> String:
         return String.from_token(Token(TokenType.STRING, string, 0, 0))
 
+    @staticmethod
+    def get_chunk(*statements: Statement) -> Chunk:
+        return Chunk(statements[0].token, list(statements), [])
+
     def test_simple_exp(self):
         parser = Parser("1+2")
         expected_tree = BinOp.from_token(
@@ -343,51 +347,39 @@ class TestParser(unittest.TestCase):
 
     def test_assign(self):
         parser = Parser('a = "bcd"')
-        expected_tree = Chunk(
-            Token(TokenType.NAME, "a", 0, 0),
-            [
-                Assign(
-                    Token(TokenType.NAME, "a", 0, 0),
-                    [self.parse_name("a")],
-                    [self.parse_string("bcd")],
-                )
-            ],
-            [],
+        expected_tree = self.get_chunk(
+            Assign(
+                Token(TokenType.NAME, "a", 0, 0),
+                [self.parse_name("a")],
+                [self.parse_string("bcd")],
+            )
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         parser = Parser('a,b,c = "bcd"')
-        expected_tree = Chunk(
-            Token(TokenType.NAME, "a", 0, 0),
-            [
-                Assign(
-                    Token(TokenType.NAME, "a", 0, 0),
-                    [
-                        self.parse_name("a"),
-                        self.parse_name("b"),
-                        self.parse_name("c"),
-                    ],
-                    [self.parse_string("bcd")],
-                )
-            ],
-            [],
+        expected_tree = self.get_chunk(
+            Assign(
+                Token(TokenType.NAME, "a", 0, 0),
+                [
+                    self.parse_name("a"),
+                    self.parse_name("b"),
+                    self.parse_name("c"),
+                ],
+                [self.parse_string("bcd")],
+            )
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         parser = Parser('a = "bcd", "def"')
-        expected_tree = Chunk(
-            Token(TokenType.NAME, "a", 0, 0),
-            [
-                Assign(
-                    Token(TokenType.NAME, "a", 0, 0),
-                    [self.parse_name("a")],
-                    [
-                        self.parse_string("bcd"),
-                        self.parse_string("def"),
-                    ],
-                )
-            ],
-            [],
+        expected_tree = self.get_chunk(
+            Assign(
+                Token(TokenType.NAME, "a", 0, 0),
+                [self.parse_name("a")],
+                [
+                    self.parse_string("bcd"),
+                    self.parse_string("def"),
+                ],
+            )
         )
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
