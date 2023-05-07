@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .Statement import Statement
 from tumfl.AST.Expression.Expression import Expression
-from tumfl.AST.Expression.Variable import Variable
 from tumfl.Token import Token, TokenType
 
 
@@ -12,9 +11,9 @@ class Assign(Statement):
     def __init__(
         self,
         token: Token,
-        targets: list[Variable],
+        targets: list[Expression],
         expressions: list[Expression],
     ):
         super().__init__(token, "Assign")
-        self.targets: list[Variable] = targets
+        self.targets: list[Expression] = targets
         self.expressions: list[Expression] = expressions

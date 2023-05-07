@@ -423,6 +423,38 @@ class Parser:
         self.eat_token(TokenType.SEMICOLON)
         return Semicolon(semicolon_token)
 
+    def _parse_var_stmt(self) -> FunctionCall | MethodInvocation | Assign:
+        """
+        Parse a variable assignment or a function
+
+        var_funct: assign_stmt | funct_call_stmt
+        """
+        first_token: Token = self.current_token
+        first_var: Expression = self._parse_var()
+        if self.current_token.type in (TokenType.COMMA, TokenType.ASSIGN):
+            return self._parse_assignment(first_token, first_var)
+        elif isinstance(first_var, ExpFunctionCall):
+            return FunctionCall(first_var.token, first_var.function, first_var.arguments)
+        elif isinstance(first_var, ExpMethodInvocation):
+            return MethodInvocation(first_var.token, first_var.function, first_var.method, first_var.arguments)
+        self.error("unexpected token after variable", self.current_token)
+
+    def _parse_assignment(self, first_token: Token, first_var: Expression) -> Assign:
+        """
+        Parse an assignment
+
+        assign_stmt: var {COMMA var} ASSIGN explist
+        """
+        variables: list[Expression] = [first_var]
+        self._add_hint("assignment", "variables")
+        while self.current_token.type == TokenType.COMMA:
+            self.eat_token()
+            variables.append(self._parse_var())
+        self._switch_hint("expressions")
+        expressions: list[Expression] = self._parse_exp_list()
+        self._remove_hint()
+        return Assign(first_token, variables, expressions)
+
     def __parse_left_associative_binop(
         self, types: tuple[TokenType, ...], base: Callable[[], Expression]
     ) -> Expression:
@@ -663,10 +695,17 @@ class Parser:
         else:
             self.error("Unexpected variable", self.current_token)
             assert False
-        if self.current_token.type in (TokenType.L_BRACKET, TokenType.L_PAREN, TokenType.L_CURL, TokenType.DOT, TokenType.COLON):
-            var = self._parse_var_terminal(var)
+        var = self._parse_or_ignore_var_terminal(var)
         self._remove_hint()
         return var
+
+    def _parse_or_ignore_var_terminal(self, base_var: Expression) -> Expression:
+        """
+        Parse a var terminal if necessary
+        """
+        if self.current_token.type in (TokenType.L_BRACKET, TokenType.DOT, TokenType.L_PAREN, TokenType.L_CURL, TokenType.COLON, TokenType.STRING):
+            base_var = self._parse_var_terminal(base_var)
+        return base_var
 
     def _parse_var_terminal(self, base_var: Expression) -> Expression:
         """
@@ -702,8 +741,7 @@ class Parser:
             case _:
                 self.error("Unknown var terminal", self.current_token)
                 assert False
-        if self.current_token.type in (TokenType.L_BRACKET, TokenType.L_PAREN, TokenType.L_CURL, TokenType.DOT, TokenType.COLON):
-            var = self._parse_var_terminal(var)
+        var = self._parse_or_ignore_var_terminal(var)
         return var
 
     def _parse_table_constructor(self) -> Table:
