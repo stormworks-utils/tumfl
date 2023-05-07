@@ -48,6 +48,12 @@ class Number(Expression):
         return int(self.integer_part, 16) if self.is_hex else int(self.integer_part)
 
     def to_float(self) -> float:
+        str_repr: str = str(self)
+        if self.is_hex:
+            return float.fromhex(str_repr)
+        return float(str_repr)
+
+    def __str__(self) -> str:
         str_repr: str = ""
         if self.is_hex:
             str_repr += "0x"
@@ -61,6 +67,4 @@ class Number(Expression):
             str_repr += f"e{self.exponent}"
         if self.float_offset:
             str_repr += f"p{self.float_offset}"
-        if self.is_hex:
-            return float.fromhex(str_repr)
-        return float(str_repr)
+        return str_repr

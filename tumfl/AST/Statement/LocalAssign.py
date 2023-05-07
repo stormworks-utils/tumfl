@@ -22,6 +22,11 @@ class AttributedName:
             return self.name == other.name and self.attribute == other.attribute
         return False
 
+    def __str__(self) -> str:
+        if self.attribute:
+            return f"{self.name.variable_name} <{self.attribute.variable_name}>"
+        return self.name.variable_name
+
 
 class LocalAssign(Statement):
     """Assignment of local variables"""

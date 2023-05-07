@@ -17,3 +17,6 @@ class Name(Variable):
         assert token.type == TokenType.NAME
         assert isinstance(token.value, str)
         return Name(token, token.value)
+
+    def __str__(self) -> str:
+        return self.variable_name
