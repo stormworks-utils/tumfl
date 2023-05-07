@@ -105,6 +105,12 @@ class TestNumberLexing(unittest.TestCase):
         self.assertEqual(lex.get_number(), nmb)
         self.assertEqual(lex.current_char, "x")
 
+    def test_only_fraction(self):
+        lex = Lexer(".4")
+        nmb: NumberTuple = (False, None, "4", None, None)
+        tok = Token(TokenType.NUMBER, nmb, 0, 0)
+        self.assertEqual(lex.get_next_token(), tok)
+
 
 class TestGetLongBrackets(unittest.TestCase):
     def test_single(self):

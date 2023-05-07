@@ -343,7 +343,11 @@ class Lexer:
                     return Token(token_type, name, **args)
                 return Token(TokenType.NAME, name, **args)
 
-            if self.current_char in NUMBER:
+            if (
+                self.current_char in NUMBER
+                or self.current_char == "."
+                and self.peek() in NUMBER
+            ):
                 number: NumberTuple = self.get_number()
                 return Token(TokenType.NUMBER, number, **args)
 
