@@ -9,6 +9,8 @@ from .basic_walker import BasicWalker
 
 
 class FormattingStyle:
+    # pylint: disable=too-few-public-methods
+
     # Statement separator
     STATEMENT_SEPARATOR: str = "\n"
     # Indentation character
@@ -32,6 +34,8 @@ class FormattingStyle:
 
 
 class MinifiedStyle(FormattingStyle):
+    # pylint: disable=too-few-public-methods
+
     STATEMENT_SEPARATOR = ";"
     INDENTATION = ""
     ARGUMENT_SEPARATOR = ","
@@ -61,6 +65,8 @@ Retype = list[str | Separators]
 
 
 class Formatter(BasicWalker[Retype]):
+    # pylint: disable=too-many-public-methods
+
     def __init__(self, style: Type[FormattingStyle]):
         self.s: Type[FormattingStyle] = style
 
@@ -68,10 +74,10 @@ class Formatter(BasicWalker[Retype]):
         return Separators.Argument.join(self.visit(arg) for arg in arguments)
 
     @staticmethod
-    def _find_level(string: str) -> int:
+    def _find_level(to_check: str) -> int:
         level: int = 0
         while True:
-            if f"[{'=' * level}[" not in string:
+            if f"[{'=' * level}[" not in to_check:
                 break
             level += 1
         return level
@@ -116,7 +122,7 @@ class Formatter(BasicWalker[Retype]):
     def visit_Boolean(self, node: Boolean) -> Retype:
         return [str(node.value).lower()]
 
-    def visit_Break(self, node: Break) -> Retype:
+    def visit_Break(self, _node: Break) -> Retype:
         return ["break"]
 
     def visit_Chunk(self, node: Chunk) -> Retype:
@@ -159,7 +165,7 @@ class Formatter(BasicWalker[Retype]):
     def visit_Name(self, node: Name) -> Retype:
         return [node.variable_name]
 
-    def visit_Nil(self, node: Nil) -> Retype:
+    def visit_Nil(self, _node: Nil) -> Retype:
         return ["nil"]
 
     def visit_Number(self, node: Number) -> Retype:
@@ -175,7 +181,7 @@ class Formatter(BasicWalker[Retype]):
             *self.visit(node.condition),
         ]
 
-    def visit_Semicolon(self, node: Semicolon) -> Retype:
+    def visit_Semicolon(self, _node: Semicolon) -> Retype:
         return [";"]
 
     def visit_String(self, node: String) -> Retype:
@@ -189,7 +195,7 @@ class Formatter(BasicWalker[Retype]):
     def visit_Table(self, node: Table) -> Retype:
         return ["{", *self._format_args(node.fields), "}"]
 
-    def visit_Vararg(self, node: Vararg) -> Retype:
+    def visit_Vararg(self, _node: Vararg) -> Retype:
         return ["..."]
 
     def visit_While(self, node: While) -> Retype:
