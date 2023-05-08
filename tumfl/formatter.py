@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import string
-from typing import Optional, Sequence, Type
+from typing import Optional, Sequence, Type, Iterator
+from enum import Enum
 
 from .AST import *
 from .basic_walker import BasicWalker
@@ -9,13 +10,11 @@ from .basic_walker import BasicWalker
 
 class FormattingStyle:
     # Statement separator
-    STMT_SEP: str = "\n"
+    STATEMENT_SEPARATOR: str = "\n"
     # Indentation character
-    INDENT: str = "\t"
+    INDENTATION: str = "\t"
     # Argument separator
-    ARG_SEP: str = ", "
-    # Optional space
-    SP: str = " "
+    ARGUMENT_SEPARATOR: str = ", "
     # Include comments or omit them
     INCLUDE_COMMENTS: bool = True
     # Separator after --
@@ -24,28 +23,45 @@ class FormattingStyle:
     USE_SINGLE_QUOTE: bool = False
     # Use direct table and string calls
     USE_CALL_SHORTHAND: bool = False
+    # Remove all characters that are not strictly required
+    REMOVE_UNNECESSARY_CHARS: bool = False
 
 
 class MinifiedStyle(FormattingStyle):
-    STMT_SEP = ";"
-    INDENT = ""
-    ARG_SEP = ","
-    SP = ""
+    STATEMENT_SEPARATOR = ";"
+    INDENTATION = ""
+    ARGUMENT_SEPARATOR = ","
     INCLUDE_COMMENTS = False
     USE_SINGLE_QUOTE = True
     USE_CALL_SHORTHAND = True
+    REMOVE_UNNECESSARY_CHARS = True
 
 
-class Formatter(BasicWalker[str]):
-    def __init__(self, style: Optional[Type[FormattingStyle]] = None):
-        self.s: Type[FormattingStyle] = style or FormattingStyle
-        self.indentation: int = 0
+class Separators(Enum):
+    Statement: str = "stmt"
+    Newline: str = "newline"
+    Argument: str = "arg"
+    Space: str = " "
+    Dot: str = "."
+    Indent: str = "indent"
+    DeIndent: str = "de-indent"
 
-    def _indent(self, to_indent: str) -> str:
-        return self.s.INDENT * self.indentation + to_indent
+    def join(self, to_join: Iterator[Retype]) -> Retype:
+        join_list: list[Retype] = list(to_join)
+        for i in range(len(join_list) - 1, 0, -1):
+            join_list[i:i] = [[self]]
+        return [elem for part in join_list for elem in part]
 
-    def _format_args(self, arguments: Sequence[ASTNode]) -> str:
-        return self.s.ARG_SEP.join(self.visit(arg) for arg in arguments)
+
+Retype = list[str | Separators]
+
+
+class Formatter(BasicWalker[Retype]):
+    def __init__(self, style: Type[FormattingStyle]):
+        self.s: Type[FormattingStyle] = style
+
+    def _format_args(self, arguments: Sequence[ASTNode]) -> Retype:
+        return Separators.Argument.join(self.visit(arg) for arg in arguments)
 
     @staticmethod
     def _find_level(string: str) -> int:
@@ -56,205 +72,301 @@ class Formatter(BasicWalker[str]):
             level += 1
         return level
 
-    def _format_comment(self, comment: str, force_long: bool = False) -> str:
+    def _format_comment(self, comment: str, force_long: bool = False) -> Retype:
         comment = comment.strip()
         if force_long or "\n" in comment:
             level: int = self._find_level(comment)
-            return f"--[{'=' * level}[{comment}]{'=' * level}]"
-        newline: str = self.s.STMT_SEP if "\n" in self.s.STMT_SEP else "\n"
-        return f"--{self.s.COMMENT_SEP}{comment}{newline}"
+            return [f"--[{'=' * level}[{comment}]{'=' * level}]"]
+        return [f"--{self.s.COMMENT_SEP}{comment}", Separators.Newline]
 
-    def _format_function_args(self, args: Sequence[Expression]) -> str:
+    def _format_function_args(self, args: Sequence[Expression]) -> Retype:
         if self.s.USE_CALL_SHORTHAND and len(args) == 1:
             if isinstance(args[0], String):
                 return self.visit(args[0])
             if isinstance(args[0], Table):
                 return self.visit(args[0])
-        return f"({self._format_args(args)})"
+        return ["(", *self._format_args(args), ")"]
 
-    def visit_Assign(self, node: Assign) -> str:
-        targets: str = self._format_args(node.targets)
-        expressions: str = self._format_args(node.expressions)
-        return f"{targets}{self.s.SP}={self.s.SP}{expressions}"
+    def visit_Assign(self, node: Assign) -> Retype:
+        return [*self._format_args(node.targets), Separators.Space, "=", Separators.Space, *self._format_args(node.expressions)]
 
-    def visit_Block(self, node: Block) -> str:
-        self.indentation += 1
-        result: str = ""
+    def visit_Block(self, node: Block) -> Retype:
+        result: Retype = [Separators.Indent]
         for statement in node.statements:
             if self.s.INCLUDE_COMMENTS and statement.comment:
-                for comment in node.comment:
-                    result += self._indent(self._format_comment(comment))
-            result += self._indent(self.visit(statement)) + self.s.STMT_SEP
+                for comment in statement.comment:
+                    result += self._format_comment(comment)
+            result += self.visit(statement) + [Separators.Statement]
         if node.returns:
-            returns: str = self._format_args(node.returns)
-            result += self._indent(f"return {returns}{self.s.STMT_SEP}")
-        self.indentation -= 1
+            returns: Retype = self._format_args(node.returns)
+            result += ["return", Separators.Space, *returns, Separators.Statement]
+        result.append(Separators.DeIndent)
         return result
 
-    def visit_Boolean(self, node: Boolean) -> str:
-        return str(node.value).lower()
+    def visit_Boolean(self, node: Boolean) -> Retype:
+        return [str(node.value).lower()]
 
-    def visit_Break(self, node: Break) -> str:
-        return "break"
+    def visit_Break(self, node: Break) -> Retype:
+        return ["break"]
 
-    def visit_Chunk(self, node: Chunk) -> str:
-        self.indentation -= 1
-        result: str = self.visit_Block(node)
-        self.indentation += 1
-        return result.removesuffix("\n\n")
+    def visit_Chunk(self, node: Chunk) -> Retype:
+        result: Retype = self.visit_Block(node)
+        return [Separators.DeIndent, *result[:-3]]
 
-    def visit_Goto(self, node: Goto) -> str:
-        return f"goto {node.label_name}"
+    def visit_Goto(self, node: Goto) -> Retype:
+        return ["goto", Separators.Space, self.visit(node.label_name)]
 
-    def visit_If(self, node: If) -> str:
-        result: str = f"if {self.visit(node.test)} then{self.s.STMT_SEP}"
+    def visit_If(self, node: If) -> Retype:
+        spaced_test: Retype = [Separators.Space, *self.visit(node.test), Separators.Space]
+        result: Retype = ["if", *spaced_test, "then", Separators.Statement]
         result += self.visit(node.true)
         current_if: If = node
         while isinstance(current_if.false, If):
             current_if = current_if.false
-            result += self._indent(
-                f"elseif {self.visit(current_if.test)} then{self.s.STMT_SEP}"
-            )
+            spaced_test = [Separators.Space, *self.visit(current_if.test), Separators.Space]
+            result += ["elseif", *spaced_test, "then", Separators.Statement]
             result += self.visit(current_if.true)
         if current_if.false:
-            result += self._indent(f"else{self.s.STMT_SEP}")
+            result += ["else", Separators.Statement]
             result += self.visit(current_if.false)
-        result += self._indent("end")
+        result += ["end"]
         return result
 
-    def visit_Index(self, node: Index) -> str:
-        return f"{self.visit(node.lhs)}[{self.visit(node.variable_name)}]"
+    def visit_Index(self, node: Index) -> Retype:
+        return [*self.visit(node.lhs), "[", *self.visit(node.variable_name), "]"]
 
-    def visit_Label(self, node: Label) -> str:
-        return f"::{node.label_name}::"
+    def visit_Label(self, node: Label) -> Retype:
+        return ["::", self.visit(node.label_name), "::"]
 
-    def visit_Name(self, node: Name) -> str:
-        return node.variable_name
+    def visit_Name(self, node: Name) -> Retype:
+        return [node.variable_name]
 
-    def visit_Nil(self, node: Nil) -> str:
-        return "nil"
+    def visit_Nil(self, node: Nil) -> Retype:
+        return ["nil"]
 
-    def visit_Number(self, node: Number) -> str:
-        return str(node)
+    def visit_Number(self, node: Number) -> Retype:
+        return [str(node)]
 
-    def visit_Repeat(self, node: Repeat) -> str:
-        result: str = f"repeat{self.s.STMT_SEP}"
-        result += self.visit(node.body)
-        result += self._indent(f"until {self.visit(node.condition)}")
-        return result
+    def visit_Repeat(self, node: Repeat) -> Retype:
+        return ["repeat", Separators.Statement, *self.visit(node.body), "until", Separators.Space, *self.visit(node.condition)]
 
-    def visit_Semicolon(self, node: Semicolon) -> str:
-        return ";"
+    def visit_Semicolon(self, node: Semicolon) -> Retype:
+        return [";"]
 
-    def visit_String(self, node: String) -> str:
+    def visit_String(self, node: String) -> Retype:
         if "\n" in node.value:
             level: int = self._find_level(node.value)
-            return f"[{'=' * level}[{node.value}]{'=' * level}]"
+            return [f"[{'=' * level}[{node.value}]{'=' * level}]"]
         if self.s.USE_SINGLE_QUOTE and node.value.count("'") < node.value.count('"'):
-            return "'" + node.value.replace('"', '\\"') + "'"
-        return '"' + node.value.replace("'", "\\'") + '"'
+            return ["'" + node.value.replace('"', '\\"') + "'"]
+        return ['"' + node.value.replace("'", "\\'") + '"']
 
-    def visit_Table(self, node: Table) -> str:
-        return f"{{{self._format_args(node.fields)}}}"
+    def visit_Table(self, node: Table) -> Retype:
+        return ["{", *self._format_args(node.fields), "}"]
 
-    def visit_Vararg(self, node: Vararg) -> str:
-        return "..."
+    def visit_Vararg(self, node: Vararg) -> Retype:
+        return ["..."]
 
-    def visit_While(self, node: While) -> str:
-        result: str = f"while {self.visit(node.condition)} do{self.s.STMT_SEP}"
-        result += self.visit(node.body)
-        result += self._indent("end")
-        return result
+    def visit_While(self, node: While) -> Retype:
+        return [
+            "while",
+            Separators.Space,
+            *self.visit(node.condition),
+            Separators.Space,
+            "do",
+            Separators.Statement,
+            *self.visit(node.body),
+            "end"
+        ]
 
-    def visit_BinOp(self, node: BinOp) -> str:
+    def visit_BinOp(self, node: BinOp) -> Retype:
         # TODO: brackets
-        return f"{self.visit(node.left)}{self.s.SP}{node.op.value}{self.s.SP}{self.visit(node.right)}"
+        return [
+            *self.visit(node.left),
+            Separators.Space,
+            node.op.value,
+            Separators.Space,
+            *self.visit(node.right)
+        ]
 
-    def visit_FunctionCall(self, node: FunctionCall) -> str:
+    def visit_FunctionCall(self, node: FunctionCall) -> Retype:
         return self.visit(node.function) + self._format_function_args(node.arguments)
 
-    def visit_FunctionDefinition(self, node: FunctionDefinition) -> str:
-        names: str = ".".join(self.visit(name) for name in node.names)
-        arguments: str = self._format_args(node.parameters)
-        result: str = f"function {names}({arguments}){self.s.STMT_SEP}"
-        result += self.visit(node.body)
-        result += self._indent(f"end{self.s.STMT_SEP}")
-        return result
+    def visit_FunctionDefinition(self, node: FunctionDefinition) -> Retype:
+        return [
+            "function",
+            Separators.Space,
+            *Separators.Dot.join(self.visit(name) for name in node.names),
+            "(",
+            *self._format_args(node.parameters),
+            ")",
+            Separators.Statement,
+            *self.visit(node.body),
+            "end",
+            Separators.Statement
+        ]
 
-    def visit_IterativeFor(self, node: IterativeFor) -> str:
-        names: str = self._format_args(node.namelist)
-        expressions: str = self._format_args(node.explist)
-        result: str = f"for {names} in {expressions} do{self.s.STMT_SEP}"
-        result += self.visit(node.body)
-        result += self._indent("end")
-        return result
+    def visit_IterativeFor(self, node: IterativeFor) -> Retype:
+        return [
+            "for",
+            Separators.Space,
+            *self._format_args(node.namelist),
+            Separators.Space,
+            "in",
+            Separators.Space,
+            *self._format_args(node.explist),
+            Separators.Space,
+            "do",
+            Separators.Statement,
+            *self.visit(node.body),
+            "end"
+        ]
 
-    def visit_LocalAssign(self, node: LocalAssign) -> str:
-        result: str = "local "
-        result += self.s.ARG_SEP.join(str(arg) for arg in node.variable_names)
+    def visit_LocalAssign(self, node: LocalAssign) -> Retype:
+        result: Retype = ["local", Separators.Space]
+        result += Separators.Argument.join(str(arg) for arg in node.variable_names)
         if node.expressions:
-            result += f"{self.s.SP}={self.s.SP}"
+            result += [Separators.Space, "=", Separators.Space]
             result += self._format_args(node.expressions)
         return result
 
-    def visit_MethodInvocation(self, node: MethodInvocation) -> str:
-        arguments: str = self._format_function_args(node.arguments)
-        return f"{self.visit(node.function)}:{node.method}{arguments}"
+    def visit_MethodInvocation(self, node: MethodInvocation) -> Retype:
+        return [
+            *self.visit(node.function),
+            ":",
+            *self.visit(node.method),
+            *self._format_function_args(node.arguments),
+        ]
 
-    def visit_NamedIndex(self, node: NamedIndex) -> str:
-        return f"{self.visit(node.lhs)}.{node.variable_name}"
+    def visit_NamedIndex(self, node: NamedIndex) -> Retype:
+        return [*self.visit(node.lhs), ".", *self.visit(node.variable_name)]
 
-    def visit_NumericFor(self, node: NumericFor) -> str:
-        result: str = f"for {node.variable_name}{self.s.SP}={self.s.SP}"
+    def visit_NumericFor(self, node: NumericFor) -> Retype:
+        spaced_name: Retype = [Separators.Space, self.visit(node.variable_name), Separators.Space]
+        result: Retype = ["for", *spaced_name, "=", Separators.Space]
         result += self.visit(node.start)
-        result += f",{self.s.SP}{self.visit(node.stop)}"
+        result += [",", Separators.Space, *self.visit(node.stop)]
         if node.step:
-            result += f",{self.s.SP}{self.visit(node.step)}"
-        result += f" do{self.s.STMT_SEP}"
+            result += [",", Separators.Space, *self.visit(node.step)]
+        result += [Separators.Space, "do", Separators.Statement]
         result += self.visit(node.body)
-        result += self._indent("end")
+        result += ["end"]
         return result
 
-    def visit_UnOp(self, node: UnOp) -> str:
-        safety_space: str = ""
-        right_text: str = self.visit(node.right)
-        if node.op == UnaryOperand.MINUS and right_text.startswith("-"):
-            safety_space = " "
-        if node.op == UnaryOperand.NOT and right_text[0] in string.ascii_letters:
-            safety_space = " "
-        return f"{node.op.value}{safety_space}{self.visit(node.right)}"
+    def visit_UnOp(self, node: UnOp) -> Retype:
+        return [node.op.value, *self.visit(node.right)]
 
-    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> str:
+    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> Retype:
         return self.visit(node.function) + self._format_function_args(node.arguments)
 
-    def visit_ExpFunctionDefinition(self, node: ExpFunctionDefinition) -> str:
-        arguments: str = self._format_args(node.parameters)
-        result: str = f"function ({arguments}){self.s.STMT_SEP}"
-        result += self.visit(node.body)
-        result += self._indent("end")
-        return result
+    def visit_ExpFunctionDefinition(self, node: ExpFunctionDefinition) -> Retype:
+        return ["function", Separators.Space, "(", *self._format_args(node.parameters), ")", Separators.Statement, *self.visit(node.body), "end"]
 
-    def visit_ExpMethodInvocation(self, node: ExpMethodInvocation) -> str:
-        arguments: str = self._format_function_args(node.arguments)
-        return f"{self.visit(node.function)}:{node.method}{arguments}"
+    def visit_ExpMethodInvocation(self, node: ExpMethodInvocation) -> Retype:
+        return [*self.visit(node.function), ":", *self.visit(node.method), *self._format_function_args(node.arguments)]
 
-    def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> str:
-        arguments: str = self._format_args(node.parameters)
-        result: str = f"local function {node.name}({arguments}){self.s.STMT_SEP}"
-        result += self.visit(node.body)
-        result += self._indent(f"end{self.s.STMT_SEP}")
-        return result
+    def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> Retype:
+        return [
+            "local",
+            "function",
+            Separators.Space,
+            *self.visit(node.function_name),
+            "(",
+            *self._format_args(node.parameters),
+            ")",
+            Separators.Statement,
+            *self.visit(node.body),
+            "end",
+            Separators.Statement
+        ]
 
-    def visit_ExplicitTableField(self, node: ExplicitTableField) -> str:
-        return f"[{self.visit(node.at)}]{self.s.SP}={self.s.SP}{self.visit(node.value)}"
+    def visit_ExplicitTableField(self, node: ExplicitTableField) -> Retype:
+        return ["[", *self.visit(node.at), "]", Separators.Space, "=", Separators.Space, *self.visit(node.value)]
 
-    def visit_NamedTableField(self, node: NamedTableField) -> str:
-        return f"{node.field_name}{self.s.SP}={self.s.SP}{self.visit(node.value)}"
+    def visit_NamedTableField(self, node: NamedTableField) -> Retype:
+        return [*self.visit(node.field_name), Separators.Space, "=", Separators.Space, *self.visit(node.value)]
 
-    def visit_NumberedTableField(self, node: NumberedTableField) -> str:
+    def visit_NumberedTableField(self, node: NumberedTableField) -> Retype:
         return self.visit(node.value)
 
 
+def _sep_required(first: str, second: str) -> bool:
+    return (
+        first in string.ascii_letters and second in string.ascii_letters
+        or first in string.digits and second in string.ascii_letters
+        or first in string.ascii_letters and second in string.digits
+    )
+
+
+def _search_token(start_idx: int, direction: int, tokens: Retype) -> str | Separators:
+    while isinstance(token := tokens[start_idx], Separators) and token in (Separators.Indent, Separators.DeIndent):
+        start_idx += direction
+    return token
+
+
+def _remove_separators(token_stream: Retype) -> None:
+    token_stream.append("/")
+    for i in range(len(token_stream) - 2, 0, -1):
+        if isinstance(own_token := token_stream[i], Separators):
+            if own_token not in (Separators.Space, Separators.Statement):
+                continue
+            previous_token = _search_token(i - 1, -1, token_stream)
+            next_token = _search_token(i + 1, 1, token_stream)
+            if isinstance(previous_token, Separators) or isinstance(next_token, Separators) or not _sep_required(previous_token[-1], next_token[0]):
+                token_stream.pop(i)
+    token_stream.pop()
+
+
+def _resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
+    newline: str = style.STATEMENT_SEPARATOR if "\n" in style.STATEMENT_SEPARATOR else "\n"
+    for i, token in enumerate(token_stream):
+        if isinstance(token, Separators):
+            if token == Separators.Space:
+                token_stream[i] = " "
+            elif token == Separators.Dot:
+                token_stream[i] = "."
+            elif token == Separators.Statement:
+                token_stream[i] = style.STATEMENT_SEPARATOR
+            elif token == Separators.Argument:
+                token_stream[i] = style.ARGUMENT_SEPARATOR
+            elif token == Separators.Newline:
+                token_stream[i] = newline
+
+
+def _indent(token_stream: Retype, indentation_str: str) -> None:
+    indentation_level: int = 0
+    indentation_dirty: bool = False
+    for i, token in enumerate(token_stream):
+        if isinstance(token, Separators):
+            assert token in (Separators.Indent, Separators.DeIndent)
+            if token == Separators.Indent:
+                indentation_level += 1
+            else:
+                indentation_level -= 1
+        else:
+            if indentation_dirty:
+                token_stream[i] = indentation_level * indentation_str + token
+                indentation_dirty = False
+            if "\n" in token:
+                indentation_dirty = True
+    assert indentation_level == 0
+
+
+def _join_tokens(token_stream: Retype) -> str:
+    result: str = ""
+    for token in token_stream:
+        if isinstance(token, str):
+            result += token
+    return result
+
+
 def format(ast: ASTNode, style: Optional[Type[FormattingStyle]] = None) -> str:
+    style = style or FormattingStyle
     formatter: Formatter = Formatter(style)
-    return formatter.visit(ast)
+    token_stream: Retype = formatter.visit(ast)
+    if style.REMOVE_UNNECESSARY_CHARS:
+        _remove_separators(token_stream)
+    token_stream[0:0] = ["--tumfl", Separators.Newline]
+    _resolve_tokens(token_stream, style)
+    _indent(token_stream, style.INDENTATION)
+    return _join_tokens(token_stream)
