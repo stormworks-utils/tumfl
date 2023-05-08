@@ -204,7 +204,9 @@ class Formatter(BasicWalker[Retype]):
             "end",
         ]
 
-    def _need_brackets(self, own_node: BinOp, other_node: Expression, care_unop: bool) -> bool:
+    def _need_brackets(
+        self, own_node: BinOp, other_node: Expression, care_unop: bool
+    ) -> bool:
         own_precedence: int = own_node.op.get_precedence()
         close_precedence: int = own_precedence + (
             1 if self.s.ADD_CLOSE_BRACKETS else -1
