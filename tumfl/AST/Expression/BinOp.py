@@ -30,6 +30,44 @@ class BinaryOperand(Enum):
     AND = "and"
     OR = "or"
 
+    def get_precedence(self) -> int:
+        if self == BinaryOperand.OR:
+            return 0
+        if self == BinaryOperand.AND:
+            return 1
+        if self in (
+            BinaryOperand.EQUALS,
+            BinaryOperand.NOT_EQUALS,
+            BinaryOperand.LESS_EQUALS,
+            BinaryOperand.GREATER_EQUALS,
+            BinaryOperand.LESS_THAN,
+            BinaryOperand.GREATER_THAN,
+        ):
+            return 2
+        if self == BinaryOperand.BIT_OR:
+            return 3
+        if self == BinaryOperand.BIT_XOR:
+            return 4
+        if self == BinaryOperand.BIT_AND:
+            return 5
+        if self in (BinaryOperand.BIT_SHIFT_RIGHT, BinaryOperand.BIT_SHIFT_LEFT):
+            return 6
+        if self == BinaryOperand.CONCAT:
+            return 7
+        if self in (BinaryOperand.PLUS, BinaryOperand.MINUS):
+            return 8
+        if self in (
+            BinaryOperand.MULT,
+            BinaryOperand.DIVIDE,
+            BinaryOperand.INTEGER_DIVISION,
+            BinaryOperand.MODULO,
+        ):
+            return 9
+        # precedence 10 is unop
+        if self == BinaryOperand.EXPONENT:
+            return 11
+        assert False, f"Unknown Binary Operand {self}"
+
 
 class BinOp(Expression):
     """Binary Operation, like a + b, 1 and 2 or 4 == b"""

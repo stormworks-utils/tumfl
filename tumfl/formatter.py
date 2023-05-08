@@ -25,6 +25,10 @@ class FormattingStyle:
     USE_CALL_SHORTHAND: bool = False
     # Remove all characters that are not strictly required
     REMOVE_UNNECESSARY_CHARS: bool = False
+    # Add brackets to arithmetic expressions no matter the use
+    ADD_ALL_BRACKETS: bool = False
+    # Add brackets to arithmetic expressions if the order is potentially confusing
+    ADD_CLOSE_BRACKETS: bool = True
 
 
 class MinifiedStyle(FormattingStyle):
@@ -200,15 +204,35 @@ class Formatter(BasicWalker[Retype]):
             "end",
         ]
 
+    def _need_brackets(self, own_node: BinOp, other_node: Expression, care_unop: bool) -> bool:
+        own_precedence: int = own_node.op.get_precedence()
+        close_precedence: int = own_precedence + (
+            1 if self.s.ADD_CLOSE_BRACKETS else -1
+        )
+        return (
+            self.s.ADD_ALL_BRACKETS
+            or isinstance(other_node, BinOp)
+            and (
+                other_node.op.get_precedence() < own_precedence
+                or other_node.op.get_precedence() == close_precedence
+            )
+            or (care_unop or self.s.ADD_CLOSE_BRACKETS)
+            and isinstance(other_node, UnOp)
+            and (10 < own_precedence or 10 == close_precedence)
+        )
+
     def visit_BinOp(self, node: BinOp) -> Retype:
-        # TODO: brackets
-        return [
-            *self.visit(node.left),
-            Separators.Space,
-            node.op.value,
-            Separators.Space,
-            *self.visit(node.right),
-        ]
+        result: Retype = []
+        if self._need_brackets(node, node.left, True):
+            result += ["(", *self.visit(node.left), ")"]
+        else:
+            result += self.visit(node.left)
+        result += [Separators.Space, node.op.value, Separators.Space]
+        if self._need_brackets(node, node.right, False):
+            result += ["(", *self.visit(node.right), ")"]
+        else:
+            result += self.visit(node.right)
+        return result
 
     def visit_FunctionCall(self, node: FunctionCall) -> Retype:
         return self.visit(node.function) + self._format_function_args(node.arguments)
@@ -279,7 +303,18 @@ class Formatter(BasicWalker[Retype]):
         return result
 
     def visit_UnOp(self, node: UnOp) -> Retype:
-        return [node.op.value, *self.visit(node.right)]
+        result: Retype = [node.op.value]
+        if (
+            self.s.ADD_ALL_BRACKETS
+            or isinstance(node.right, BinOp)
+            and node.right.op != BinaryOperand.EXPONENT
+        ):
+            result += ["(", *self.visit(node.right), ")"]
+        elif isinstance(node.right, UnOp) or node.op == UnaryOperand.NOT:
+            result += [Separators.Space, *self.visit(node.right)]
+        else:
+            result += self.visit(node.right)
+        return result
 
     def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> Retype:
         return self.visit(node.function) + self._format_function_args(node.arguments)
@@ -351,6 +386,8 @@ def _sep_required(first: str, second: str) -> bool:
         and second in string.ascii_letters
         or first in string.ascii_letters
         and second in string.digits
+        or first == "-"
+        and second == "-"
     )
 
 
