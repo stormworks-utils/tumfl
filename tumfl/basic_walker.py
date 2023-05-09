@@ -180,3 +180,57 @@ class BasicWalker(NodeVisitor, Generic[T], ABC):
     def visit_ExplicitTableField(self, node: ExplicitTableField) -> T:
         self.visit(node.at)
         return self.visit(node.value)
+
+
+class NoneWalker(BasicWalker[None]):
+    def visit_Boolean(self, node: Boolean) -> None:
+        ...
+
+    def visit_Name(self, node: Name) -> None:
+        ...
+
+    def visit_Nil(self, node: Nil) -> None:
+        ...
+
+    def visit_Number(self, node: Number) -> None:
+        ...
+
+    def visit_String(self, node: String) -> None:
+        ...
+
+    def visit_Table(self, node: Table) -> None:
+        for field in node.fields:
+            self.visit(field)
+
+    def visit_Vararg(self, node: Vararg) -> None:
+        ...
+
+    def visit_Assign(self, node: Assign) -> None:
+        for target in node.targets:
+            self.visit(target)
+        if node.expressions:
+            for expr in node.expressions:
+                self.visit(expr)
+
+    def visit_Block(self, node: Block) -> None:
+        for stmt in node.statements:
+            self.visit(stmt)
+        if node.returns:
+            for expr in node.returns:
+                self.visit(expr)
+
+    def visit_Break(self, node: Break) -> None:
+        ...
+
+    def visit_Goto(self, node: Goto) -> None:
+        self.visit(node.label_name)
+
+    def visit_Label(self, node: Label) -> None:
+        self.visit(node.label_name)
+
+    def visit_LocalAssign(self, node: LocalAssign) -> None:
+        for var in node.variable_names:
+            self.visit(var.name)
+
+    def visit_Semicolon(self, node: Semicolon) -> None:
+        ...
