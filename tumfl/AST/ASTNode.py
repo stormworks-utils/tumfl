@@ -48,7 +48,7 @@ class ASTNode(ABC):
             if node is to_replace:
                 setattr(self, i, replacement)
                 return
-            elif isinstance(node, list):
+            if isinstance(node, list):
                 for j, element in enumerate(node):
                     if element is to_replace:
                         node[j] = replacement
