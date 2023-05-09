@@ -1,6 +1,6 @@
 import unittest
 
-from tumfl.AST import Block, If
+from tumfl.AST import Block, ExpFunctionDefinition, If
 from tumfl.formatter import Formatter, FormattingStyle, MinifiedStyle, Separators
 from tumfl.parser import Parser
 
@@ -226,6 +226,199 @@ class TestFormatter(unittest.TestCase):
             Separators.Statement,
             *self.normal.visit(stmt.body),
             "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_BinOp(self):
+        exp = Parser("a+b")._parse_exp()
+        expected = ["a", Separators.Space, "+", Separators.Space, "b"]
+        self.assertEqual(self.normal.visit(exp), expected)
+        exp = Parser("(a+b)*(c+d)")._parse_exp()
+        expected = [
+            "(",
+            "a",
+            Separators.Space,
+            "+",
+            Separators.Space,
+            "b",
+            ")",
+            Separators.Space,
+            "*",
+            Separators.Space,
+            "(",
+            "c",
+            Separators.Space,
+            "+",
+            Separators.Space,
+            "d",
+            ")",
+        ]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_FunctionCall(self):
+        stmt = Parser("a(1)")._parse_statement()
+        expected = ["a", "(", "1", ")"]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_FunctionDefinition(self):
+        stmt = Parser("function a(b)a=b end")._parse_function()
+        expected = [
+            "function",
+            Separators.Space,
+            "a",
+            "(",
+            "b",
+            ")",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "end",
+            Separators.Statement,
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_IterativeFor(self):
+        stmt = Parser("for a in b do a=b end")._parse_for()
+        expected = [
+            "for",
+            Separators.Space,
+            "a",
+            Separators.Space,
+            "in",
+            Separators.Space,
+            "b",
+            Separators.Space,
+            "do",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_LocalAssign(self):
+        stmt = Parser("local a <const>, b = b")._parse_local()
+        expected = [
+            "local",
+            Separators.Space,
+            "a",
+            Separators.Space,
+            "<",
+            "const",
+            ">",
+            Separators.Argument,
+            "b",
+            Separators.Space,
+            "=",
+            Separators.Space,
+            "b",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+        stmt = Parser("local a")._parse_local()
+        expected = ["local", Separators.Space, "a"]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_MethodInvocation(self):
+        stmt = Parser("a:b(1)")._parse_statement()
+        expected = ["a", ":", "b", "(", "1", ")"]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_NamedIndex(self):
+        exp = Parser("a.b")._parse_var()
+        expected = ["a", ".", "b"]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_NumericFor(self):
+        stmt = Parser("for a=1,2 do a=b end")._parse_for()
+        expected = [
+            "for",
+            Separators.Space,
+            "a",
+            Separators.Space,
+            "=",
+            Separators.Space,
+            "1",
+            Separators.Argument,
+            "2",
+            Separators.Space,
+            "do",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+        stmt = Parser("for a=1,2,3 do a=b end")._parse_for()
+        expected = [
+            "for",
+            Separators.Space,
+            "a",
+            Separators.Space,
+            "=",
+            Separators.Space,
+            "1",
+            Separators.Argument,
+            "2",
+            Separators.Argument,
+            "3",
+            Separators.Space,
+            "do",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_UnOp(self):
+        exp = Parser("-1")._parse_exp()
+        expected = ["-", "1"]
+        self.assertEqual(self.normal.visit(exp), expected)
+        exp = Parser("-(1+2)")._parse_exp()
+        expected = ["-", "(", "1", Separators.Space, "+", Separators.Space, "2", ")"]
+        self.assertEqual(self.normal.visit(exp), expected)
+        exp = Parser("not 1")._parse_exp()
+        expected = ["not", Separators.Space, "1"]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_ExpFunctionCall(self):
+        exp = Parser("a(1)")._parse_exp()
+        expected = ["a", "(", "1", ")"]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_ExpFunctionDefinition(self):
+        exp = Parser("function (a,b)a=b end")._parse_exp()
+        assert isinstance(exp, ExpFunctionDefinition)
+        expected = [
+            "function",
+            Separators.Space,
+            "(",
+            "a",
+            Separators.Argument,
+            "b",
+            ")",
+            Separators.Statement,
+            *self.normal.visit(exp.body),
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_ExpMethodInvocation(self):
+        exp = Parser("a:b(1)")._parse_exp()
+        expected = ["a", ":", "b", "(", "1", ")"]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_LocalFunctionDefinition(self):
+        stmt = Parser("local function abc(a)a=b end")._parse_local()
+        expected = [
+            "local",
+            Separators.Space,
+            "function",
+            Separators.Space,
+            "abc",
+            "(",
+            "a",
+            ")",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "end",
+            Separators.Statement,
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
 

@@ -280,7 +280,15 @@ class Formatter(BasicWalker[Retype]):
 
     def visit_LocalAssign(self, node: LocalAssign) -> Retype:
         result: Retype = ["local", Separators.Space]
-        result += Separators.Argument.join([str(arg)] for arg in node.variable_names)
+        names: list[Retype] = []
+        for name in node.variable_names:
+            if name.attribute:
+                names.append(
+                    [str(name.name), Separators.Space, "<", str(name.attribute), ">"]
+                )
+            else:
+                names.append([str(name.name)])
+        result += Separators.Argument.join(iter(names))
         if node.expressions:
             result += [Separators.Space, "=", Separators.Space]
             result += self._format_args(node.expressions)
@@ -300,14 +308,14 @@ class Formatter(BasicWalker[Retype]):
     def visit_NumericFor(self, node: NumericFor) -> Retype:
         spaced_name: Retype = [
             Separators.Space,
-            self.visit(node.variable_name),
+            *self.visit(node.variable_name),
             Separators.Space,
         ]
         result: Retype = ["for", *spaced_name, "=", Separators.Space]
         result += self.visit(node.start)
-        result += [",", Separators.Space, *self.visit(node.stop)]
+        result += [Separators.Argument, *self.visit(node.stop)]
         if node.step:
-            result += [",", Separators.Space, *self.visit(node.step)]
+            result += [Separators.Argument, *self.visit(node.step)]
         result += [Separators.Space, "do", Separators.Statement]
         result += self.visit(node.body)
         result += ["end"]
@@ -353,6 +361,7 @@ class Formatter(BasicWalker[Retype]):
     def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> Retype:
         return [
             "local",
+            Separators.Space,
             "function",
             Separators.Space,
             *self.visit(node.function_name),
