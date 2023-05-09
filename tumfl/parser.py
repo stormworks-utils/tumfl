@@ -880,4 +880,6 @@ class Parser:
 
 
 def parse(chunk: str) -> Chunk:
-    return Parser(chunk).parse_chunk()
+    ast: Chunk = Parser(chunk).parse_chunk()
+    ast.parent(None)
+    return ast
