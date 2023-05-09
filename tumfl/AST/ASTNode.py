@@ -35,9 +35,21 @@ class ASTNode(ABC):
             and i not in ["replace", "parent", "parent_class", "var", "token"]
         )
 
-    def parent(self, parent: ASTNode) -> None:
+    def parent(self, parent: Optional[ASTNode]) -> None:
         self.parent_class = parent
         for i in self.__dir():
             node: Any = getattr(self, i)
             if isinstance(node, ASTNode):
                 node.parent(self)
+
+    def replace_child(self, to_replace: ASTNode, replacement: ASTNode) -> None:
+        for i in self.__dir():
+            node: Any = getattr(self, i)
+            if node is to_replace:
+                setattr(self, i, replacement)
+                return
+            elif isinstance(node, list):
+                for j, element in enumerate(node):
+                    if element is to_replace:
+                        node[j] = replacement
+                        return
