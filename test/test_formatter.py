@@ -137,3 +137,99 @@ class TestFormatter(unittest.TestCase):
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_Index(self):
+        index = Parser("a[1]")._parse_var()
+        expected = ["a", "[", "1", "]"]
+        self.assertEqual(self.normal.visit(index), expected)
+
+    def test_Label(self):
+        stmt = Parser("::label::")._parse_statement()
+        expected = ["::", "label", "::"]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_Name(self):
+        name = Parser("abc")._parse_var()
+        expected = ["abc"]
+        self.assertEqual(self.normal.visit(name), expected)
+
+    def test_Nil(self):
+        exp = Parser("nil")._parse_exp()
+        expected = ["nil"]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_Number(self):
+        exp = Parser("1.23")._parse_exp()
+        expected = ["1.23"]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_Repeat(self):
+        stmt = Parser("repeat a=b until 1")._parse_repeat()
+        expected = [
+            "repeat",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "until",
+            Separators.Space,
+            "1",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_Semicolon(self):
+        stmt = Parser(";")._parse_statement()
+        expected = [";"]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_String(self):
+        parser = Parser("'abc''def\"'[[ghi\njkl]][[mno'\"\"]][===[[[=[==[\n]===]")
+        exp = parser._parse_exp()
+        expected = ['"abc"']
+        self.assertEqual(self.normal.visit(exp), expected)
+        self.assertEqual(self.minified.visit(exp), expected)
+        exp = parser._parse_exp()
+        expected = ['"def\\""']
+        self.assertEqual(self.normal.visit(exp), expected)
+        expected = ["'def\"'"]
+        self.assertEqual(self.minified.visit(exp), expected)
+        exp = parser._parse_exp()
+        expected = ["[[ghi\njkl]]"]
+        self.assertEqual(self.normal.visit(exp), expected)
+        self.assertEqual(self.minified.visit(exp), expected)
+        exp = parser._parse_exp()
+        expected = ['"mno\'\\"\\""']
+        self.assertEqual(self.normal.visit(exp), expected)
+        expected = ["'mno\\'\"\"'"]
+        self.assertEqual(self.minified.visit(exp), expected)
+        exp = parser._parse_exp()
+        expected = ["[===[[[=[==[\n]===]"]
+        self.assertEqual(self.normal.visit(exp), expected)
+        self.assertEqual(self.minified.visit(exp), expected)
+
+    def test_Table(self):
+        table = Parser("{a,b}")._parse_table_constructor()
+        expected = ["{", "a", Separators.Argument, "b", "}"]
+        self.assertEqual(self.normal.visit(table), expected)
+
+    def test_Vararg(self):
+        exp = Parser("...")._parse_exp()
+        expected = ["..."]
+        self.assertEqual(self.normal.visit(exp), expected)
+
+    def test_While(self):
+        stmt = Parser("while i do a=b end")._parse_while()
+        expected = [
+            "while",
+            Separators.Space,
+            "i",
+            Separators.Space,
+            "do",
+            Separators.Statement,
+            *self.normal.visit(stmt.body),
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
+    def test_Field(self):
+        index = Parser("[1]=2")._parse_field()
+        expected = ["[", "1", "]", Separators.Space, "=", Separators.Space, "2"]
+        self.assertEqual(self.normal.visit(index), expected)

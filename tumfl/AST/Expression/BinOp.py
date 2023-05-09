@@ -30,19 +30,44 @@ class BinaryOperand(Enum):
     AND = "and"
     OR = "or"
 
-    def get_precedence(self) -> int:
-        if self == BinaryOperand.OR:
-            return 0
-        if self == BinaryOperand.AND:
-            return 1
-        if self in (
+    @property
+    def __lvl2(self) -> tuple[BinaryOperand, ...]:
+        return (
             BinaryOperand.EQUALS,
             BinaryOperand.NOT_EQUALS,
             BinaryOperand.LESS_EQUALS,
             BinaryOperand.GREATER_EQUALS,
             BinaryOperand.LESS_THAN,
             BinaryOperand.GREATER_THAN,
-        ):
+        )
+
+    @property
+    def __bitwise_operands(self) -> tuple[BinaryOperand, ...]:
+        return (
+            BinaryOperand.BIT_XOR,
+            BinaryOperand.BIT_AND,
+            BinaryOperand.BIT_SHIFT_LEFT,
+            BinaryOperand.BIT_SHIFT_RIGHT,
+            BinaryOperand.CONCAT,
+            BinaryOperand.PLUS,
+            BinaryOperand.MINUS,
+        )
+
+    @property
+    def __lvl8(self) -> tuple[BinaryOperand, ...]:
+        return (
+            BinaryOperand.MULT,
+            BinaryOperand.DIVIDE,
+            BinaryOperand.INTEGER_DIVISION,
+            BinaryOperand.MODULO,
+        )
+
+    def get_precedence(self) -> int:
+        if self == BinaryOperand.OR:
+            return 0
+        if self == BinaryOperand.AND:
+            return 1
+        if self in self.__lvl2:
             return 2
         if self == BinaryOperand.BIT_OR:
             return 3
@@ -56,16 +81,37 @@ class BinaryOperand(Enum):
             return 7
         if self in (BinaryOperand.PLUS, BinaryOperand.MINUS):
             return 8
-        if self in (
-            BinaryOperand.MULT,
-            BinaryOperand.DIVIDE,
-            BinaryOperand.INTEGER_DIVISION,
-            BinaryOperand.MODULO,
-        ):
+        if self in self.__lvl8:
             return 9
         # precedence 10 is unop
         if self == BinaryOperand.EXPONENT:
             return 11
+        assert False, f"Unknown Binary Operand {self}"
+
+    def get_optional_brackets(self) -> tuple[BinaryOperand, ...]:
+        if self == BinaryOperand.OR:
+            return (BinaryOperand.AND,)
+        if self == BinaryOperand.AND:
+            return ()
+        if self in self.__lvl2:
+            return self.__lvl2
+        if self == BinaryOperand.BIT_OR:
+            return self.__bitwise_operands
+        if self == BinaryOperand.BIT_XOR:
+            return self.__bitwise_operands
+        if self == BinaryOperand.BIT_AND:
+            return self.__bitwise_operands
+        if self in (BinaryOperand.BIT_SHIFT_RIGHT, BinaryOperand.BIT_SHIFT_LEFT):
+            return self.__bitwise_operands
+        if self == BinaryOperand.CONCAT:
+            return BinaryOperand.PLUS, BinaryOperand.MINUS
+        if self in (BinaryOperand.PLUS, BinaryOperand.MINUS):
+            return self.__lvl8
+        if self in self.__lvl8:
+            return (BinaryOperand.EXPONENT,)
+        # precedence 10 is unop
+        if self == BinaryOperand.EXPONENT:
+            return ()
         assert False, f"Unknown Binary Operand {self}"
 
 

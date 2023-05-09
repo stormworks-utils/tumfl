@@ -31,6 +31,8 @@ class FormattingStyle:
     ADD_ALL_BRACKETS: bool = False
     # Add brackets to arithmetic expressions if the order is potentially confusing
     ADD_CLOSE_BRACKETS: bool = True
+    # Add a space around `=` in table constructors
+    SPACE_IN_TABLE: bool = True
 
 
 class MinifiedStyle(FormattingStyle):
@@ -161,7 +163,7 @@ class Formatter(BasicWalker[Retype]):
         return [*self.visit(node.lhs), "[", *self.visit(node.variable_name), "]"]
 
     def visit_Label(self, node: Label) -> Retype:
-        return ["::", self.visit(node.label_name), "::"]
+        return ["::", *self.visit(node.label_name), "::"]
 
     def visit_Name(self, node: Name) -> Retype:
         return [node.variable_name]
@@ -190,8 +192,8 @@ class Formatter(BasicWalker[Retype]):
             level: int = self._find_level(node.value)
             return [f"[{'=' * level}[{node.value}]{'=' * level}]"]
         if self.s.USE_SINGLE_QUOTE and node.value.count("'") < node.value.count('"'):
-            return ["'" + node.value.replace('"', '\\"') + "'"]
-        return ['"' + node.value.replace("'", "\\'") + '"']
+            return ["'" + node.value.replace("'", "\\'") + "'"]
+        return ['"' + node.value.replace('"', '\\"') + '"']
 
     def visit_Table(self, node: Table) -> Retype:
         return ["{", *self._format_args(node.fields), "}"]
@@ -215,19 +217,16 @@ class Formatter(BasicWalker[Retype]):
         self, own_node: BinOp, other_node: Expression, care_unop: bool
     ) -> bool:
         own_precedence: int = own_node.op.get_precedence()
-        close_precedence: int = own_precedence + (
-            1 if self.s.ADD_CLOSE_BRACKETS else -1
-        )
         return (
             self.s.ADD_ALL_BRACKETS
             or isinstance(other_node, BinOp)
             and (
-                other_node.op.get_precedence() < own_precedence
-                or other_node.op.get_precedence() == close_precedence
+                own_precedence > other_node.op.get_precedence()
+                or self.s.ADD_CLOSE_BRACKETS and other_node.op in own_node.op.get_optional_brackets()
             )
             or (care_unop or self.s.ADD_CLOSE_BRACKETS)
             and isinstance(other_node, UnOp)
-            and (10 < own_precedence or 10 == close_precedence)
+            and (own_precedence > 10 or self.s.ADD_CLOSE_BRACKETS and own_precedence >= 9)
         )
 
     def visit_BinOp(self, node: BinOp) -> Retype:
