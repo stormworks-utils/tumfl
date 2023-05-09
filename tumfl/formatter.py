@@ -40,6 +40,7 @@ class MinifiedStyle(FormattingStyle):
     INDENTATION = ""
     ARGUMENT_SEPARATOR = ","
     INCLUDE_COMMENTS = False
+    COMMENT_SEP = ""
     USE_SINGLE_QUOTE = True
     USE_CALL_SHORTHAND = True
     REMOVE_UNNECESSARY_CHARS = True
@@ -86,7 +87,7 @@ class Formatter(BasicWalker[Retype]):
         comment = comment.strip()
         if force_long or "\n" in comment:
             level: int = self._find_level(comment)
-            return [f"--[{'=' * level}[{comment}]{'=' * level}]"]
+            return [f"--[{'=' * level}[{comment}]{'=' * level}]", Separators.Statement]
         return [f"--{self.s.COMMENT_SEP}{comment}", Separators.Newline]
 
     def _format_function_args(self, args: Sequence[Expression]) -> Retype:
@@ -127,10 +128,10 @@ class Formatter(BasicWalker[Retype]):
 
     def visit_Chunk(self, node: Chunk) -> Retype:
         result: Retype = self.visit_Block(node)
-        return [Separators.DeIndent, *result[:-3]]
+        return [Separators.DeIndent, *result[:-2]]
 
     def visit_Goto(self, node: Goto) -> Retype:
-        return ["goto", Separators.Space, self.visit(node.label_name)]
+        return ["goto", Separators.Space, *self.visit(node.label_name)]
 
     def visit_If(self, node: If) -> Retype:
         spaced_test: Retype = [
