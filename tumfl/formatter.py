@@ -222,11 +222,14 @@ class Formatter(BasicWalker[Retype]):
             or isinstance(other_node, BinOp)
             and (
                 own_precedence > other_node.op.get_precedence()
-                or self.s.ADD_CLOSE_BRACKETS and other_node.op in own_node.op.get_optional_brackets()
+                or self.s.ADD_CLOSE_BRACKETS
+                and other_node.op in own_node.op.get_optional_brackets()
             )
             or (care_unop or self.s.ADD_CLOSE_BRACKETS)
             and isinstance(other_node, UnOp)
-            and (own_precedence > 10 or self.s.ADD_CLOSE_BRACKETS and own_precedence >= 9)
+            and (
+                own_precedence > 10 or self.s.ADD_CLOSE_BRACKETS and own_precedence >= 9
+            )
         )
 
     def visit_BinOp(self, node: BinOp) -> Retype:
