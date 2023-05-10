@@ -1,7 +1,17 @@
 import unittest
 
 from tumfl.AST import Block, ExpFunctionDefinition, If
-from tumfl.formatter import Formatter, FormattingStyle, MinifiedStyle, Separators
+from tumfl.formatter import (
+    Formatter,
+    FormattingStyle,
+    MinifiedStyle,
+    Separators,
+    format,
+    indent,
+    remove_separators,
+    resolve_tokens,
+    sep_required,
+)
 from tumfl.parser import Parser
 
 
@@ -46,6 +56,14 @@ class TestFormatter(unittest.TestCase):
         self.assertEqual(self.normal._format_function_args(expression), expected)
         self.assertEqual(self.minified._format_function_args(expression), expected)
 
+    def test_format_var(self):
+        exp = Parser("a.b")._parse_var()
+        expected = ["a", Separators.Dot, "b"]
+        self.assertEqual(self.normal._format_var(exp), expected)
+        exp = Parser("(a+b)")._parse_var()
+        expected = ["(", "a", Separators.Space, "+", Separators.Space, "b", ")"]
+        self.assertEqual(self.normal._format_var(exp), expected)
+
     def test_Assign(self):
         stmt = Parser("a = b")._parse_statement()
         expected = ["a", Separators.Space, "=", Separators.Space, "b"]
@@ -55,8 +73,6 @@ class TestFormatter(unittest.TestCase):
     def test_block(self):
         chunk = Parser("--comment\na=b c=d return a").parse_chunk()
         expected = [
-            Separators.DeIndent,
-            Separators.Indent,
             "-- comment",
             Separators.Newline,
             *self.normal.visit(chunk.statements[0]),
@@ -68,13 +84,11 @@ class TestFormatter(unittest.TestCase):
             "a",
         ]
         self.assertEqual(self.normal.visit(chunk), expected)
-        expected.pop(2)
-        expected.pop(2)
+        expected.pop(0)
+        expected.pop(0)
         self.assertEqual(self.minified.visit(chunk), expected)
         chunk = Parser("a=b").parse_chunk()
         expected = [
-            Separators.DeIndent,
-            Separators.Indent,
             *self.normal.visit(chunk.statements[0]),
         ]
         self.assertEqual(self.normal.visit(chunk), expected)
@@ -111,17 +125,17 @@ class TestFormatter(unittest.TestCase):
             Separators.Space,
             "then",
             Separators.Statement,
-            *self.normal.visit(stmt.true),
+            *self.normal.visit(stmt.true)[2:-1],
             "elseif",
             Separators.Space,
             "0",
             Separators.Space,
             "then",
             Separators.Statement,
-            *self.normal.visit(stmt.false.true),
+            *self.normal.visit(stmt.false.true)[2:-1],
             "else",
             Separators.Statement,
-            *self.normal.visit(stmt.false.false),
+            *self.normal.visit(stmt.false.false)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
@@ -133,7 +147,7 @@ class TestFormatter(unittest.TestCase):
             Separators.Space,
             "then",
             Separators.Statement,
-            *self.normal.visit(stmt.true),
+            *self.normal.visit(stmt.true)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
@@ -168,7 +182,7 @@ class TestFormatter(unittest.TestCase):
         expected = [
             "repeat",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
             "until",
             Separators.Space,
             "1",
@@ -181,7 +195,9 @@ class TestFormatter(unittest.TestCase):
         self.assertEqual(self.normal.visit(stmt), expected)
 
     def test_String(self):
-        parser = Parser("'abc''def\"'[[ghi\njkl]][[mno'\"\"]][===[[[=[==[\n]===]")
+        parser = Parser(
+            "'abc''def\"'[[ghi\njkl]][[mno'\"\"]][===[[[=[==[\n]===]'\\\\1\\255\x00'"
+        )
         exp = parser._parse_exp()
         expected = ['"abc"']
         self.assertEqual(self.normal.visit(exp), expected)
@@ -204,6 +220,9 @@ class TestFormatter(unittest.TestCase):
         expected = ["[===[[[=[==[\n]===]"]
         self.assertEqual(self.normal.visit(exp), expected)
         self.assertEqual(self.minified.visit(exp), expected)
+        exp = parser._parse_exp()
+        expected = ['"\\\\1\\xff\\x00"']
+        self.assertEqual(self.normal.visit(exp), expected)
 
     def test_Table(self):
         table = Parser("{a,b}")._parse_table_constructor()
@@ -224,7 +243,7 @@ class TestFormatter(unittest.TestCase):
             Separators.Space,
             "do",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
@@ -270,7 +289,22 @@ class TestFormatter(unittest.TestCase):
             "b",
             ")",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
+            "end",
+            Separators.Statement,
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+        stmt = Parser("function a:b()a=b end")._parse_function()
+        expected = [
+            "function",
+            Separators.Space,
+            "a",
+            ":",
+            "b",
+            "(",
+            ")",
+            Separators.Statement,
+            *self.normal.visit(stmt.body)[2:-1],
             "end",
             Separators.Statement,
         ]
@@ -289,7 +323,7 @@ class TestFormatter(unittest.TestCase):
             Separators.Space,
             "do",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
@@ -323,7 +357,7 @@ class TestFormatter(unittest.TestCase):
 
     def test_NamedIndex(self):
         exp = Parser("a.b")._parse_var()
-        expected = ["a", ".", "b"]
+        expected = ["a", Separators.Dot, "b"]
         self.assertEqual(self.normal.visit(exp), expected)
 
     def test_NumericFor(self):
@@ -341,7 +375,7 @@ class TestFormatter(unittest.TestCase):
             Separators.Space,
             "do",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
@@ -361,7 +395,7 @@ class TestFormatter(unittest.TestCase):
             Separators.Space,
             "do",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
@@ -394,7 +428,7 @@ class TestFormatter(unittest.TestCase):
             "b",
             ")",
             Separators.Statement,
-            *self.normal.visit(exp.body),
+            *self.normal.visit(exp.body)[2:-1],
             "end",
         ]
         self.assertEqual(self.normal.visit(exp), expected)
@@ -416,13 +450,135 @@ class TestFormatter(unittest.TestCase):
             "a",
             ")",
             Separators.Statement,
-            *self.normal.visit(stmt.body),
+            *self.normal.visit(stmt.body)[2:-1],
             "end",
             Separators.Statement,
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
 
-    def test_Field(self):
+    def test_ExplicitTableField(self):
         index = Parser("[1]=2")._parse_field()
         expected = ["[", "1", "]", Separators.Space, "=", Separators.Space, "2"]
         self.assertEqual(self.normal.visit(index), expected)
+
+    def test_NamedTableField(self):
+        index = Parser("a=2")._parse_field()
+        expected = ["a", Separators.Space, "=", Separators.Space, "2"]
+        self.assertEqual(self.normal.visit(index), expected)
+
+    def test_NumberedTableField(self):
+        index = Parser("a")._parse_field()
+        expected = ["a"]
+        self.assertEqual(self.normal.visit(index), expected)
+
+
+class TestTokenFormatters(unittest.TestCase):
+    def test_sep_required(self):
+        self.assertTrue(sep_required("a", "b"))
+        self.assertTrue(sep_required("a", "1"))
+        self.assertTrue(sep_required("1", "2"))
+        self.assertTrue(sep_required("1", "b"))
+        self.assertTrue(sep_required("-", "-"))
+        self.assertFalse(sep_required("a", "("))
+        self.assertFalse(sep_required("1", ","))
+
+    def test_remove_separators(self):
+        base = ["a", Separators.Space, "b", Separators.Space, "("]
+        expected = ["a", Separators.Space, "b", "("]
+        remove_separators(base)
+        self.assertEqual(base, expected)
+        base = [
+            "a",
+            Separators.Space,
+            Separators.DeIndent,
+            "b",
+            Separators.Indent,
+            Separators.Newline,
+            "(",
+        ]
+        expected = [
+            "a",
+            Separators.Space,
+            Separators.DeIndent,
+            "b",
+            Separators.Indent,
+            Separators.Newline,
+            "(",
+        ]
+        remove_separators(base)
+        self.assertEqual(base, expected)
+
+    def test_resolve_tokens(self):
+        base = [
+            Separators.Space,
+            Separators.Indent,
+            Separators.DeIndent,
+            Separators.Statement,
+            Separators.Newline,
+            Separators.Argument,
+            Separators.Dot,
+            "a",
+        ]
+        expected = [
+            " ",
+            Separators.Indent,
+            Separators.DeIndent,
+            FormattingStyle.STATEMENT_SEPARATOR,
+            FormattingStyle.STATEMENT_SEPARATOR,
+            FormattingStyle.ARGUMENT_SEPARATOR,
+            ".",
+            "a",
+        ]
+        resolve_tokens(base, FormattingStyle)
+        self.assertEqual(base, expected)
+        base = [
+            Separators.Space,
+            Separators.Indent,
+            Separators.DeIndent,
+            Separators.Statement,
+            Separators.Newline,
+            Separators.Argument,
+            Separators.Dot,
+        ]
+        expected = [
+            " ",
+            Separators.Indent,
+            Separators.DeIndent,
+            MinifiedStyle.STATEMENT_SEPARATOR,
+            "\n",
+            MinifiedStyle.ARGUMENT_SEPARATOR,
+            ".",
+        ]
+        resolve_tokens(base, MinifiedStyle)
+        self.assertEqual(base, expected)
+
+    def test_indent(self):
+        base = [
+            "a\n",
+            Separators.Indent,
+            "b\n",
+            Separators.Indent,
+            "c\n",
+            Separators.DeIndent,
+            Separators.DeIndent,
+            "a",
+        ]
+        expected = [
+            "a\n",
+            Separators.Indent,
+            "\tb\n",
+            Separators.Indent,
+            "\t\tc\n",
+            Separators.DeIndent,
+            Separators.DeIndent,
+            "a",
+        ]
+        indent(base, "\t")
+        self.assertEqual(base, expected)
+
+    def test_format(self):
+        chunk = Parser("a=b if 1 then c=d else b=d end").parse_chunk()
+        expected = "-- tumfl\na = b\nif 1 then\n\tc = d\nelse\n\tb = d\nend"
+        self.assertEqual(format(chunk), expected)
+        expected = "--tumfl\na=b;if 1 then;c=d;else;b=d;end"
+        self.assertEqual(format(chunk, MinifiedStyle), expected)

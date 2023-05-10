@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import string
 from enum import Enum
-from typing import Iterator, Optional, Sequence, Type
+from typing import Iterator, Literal, Optional, Sequence, Type
 
 from .AST import *
 from .basic_walker import BasicWalker
@@ -65,6 +65,15 @@ class Separators(Enum):
 
 
 Retype = list[str | Separators]
+ESCAPE_CHARACTERS: dict[str, str] = {
+    "\a": "a",
+    "\b": "b",
+    "\f": "f",
+    "\n": "n",
+    "\r": "r",
+    "\t": "t",
+    "\v": "v",
+}
 
 
 class Formatter(BasicWalker[Retype]):
@@ -79,8 +88,13 @@ class Formatter(BasicWalker[Retype]):
     @staticmethod
     def _find_level(to_check: str) -> int:
         level: int = 0
+        if to_check.endswith("]"):
+            level = 1
         while True:
-            if f"[{'=' * level}[" not in to_check:
+            if (
+                f"[{'=' * level}[" not in to_check
+                and f"]{'=' * level}]" not in to_check
+            ):
                 break
             level += 1
         return level
@@ -100,9 +114,17 @@ class Formatter(BasicWalker[Retype]):
                 return self.visit(args[0])
         return ["(", *self._format_args(args), ")"]
 
+    def _format_var(self, var: Expression) -> Retype:
+        if isinstance(
+            var, (Name, Index, NamedIndex, ExpFunctionCall, ExpMethodInvocation)
+        ):
+            return self.visit(var)
+        return ["(", *self.visit(var), ")"]
+
     def visit_Assign(self, node: Assign) -> Retype:
+        targets: list[Retype] = [self._format_var(var) for var in node.targets]
         return [
-            *self._format_args(node.targets),
+            *Separators.Argument.join(iter(targets)),
             Separators.Space,
             "=",
             Separators.Space,
@@ -110,7 +132,7 @@ class Formatter(BasicWalker[Retype]):
         ]
 
     def visit_Block(self, node: Block) -> Retype:
-        result: Retype = [Separators.Indent]
+        result: Retype = ["do", Separators.Statement, Separators.Indent]
         for statement in node.statements:
             if self.s.INCLUDE_COMMENTS and statement.comment:
                 for comment in statement.comment:
@@ -119,7 +141,7 @@ class Formatter(BasicWalker[Retype]):
         if node.returns:
             returns: Retype = self._format_args(node.returns)
             result += ["return", Separators.Space, *returns, Separators.Statement]
-        result.append(Separators.DeIndent)
+        result += [Separators.DeIndent, "end"]
         return result
 
     def visit_Boolean(self, node: Boolean) -> Retype:
@@ -130,7 +152,7 @@ class Formatter(BasicWalker[Retype]):
 
     def visit_Chunk(self, node: Chunk) -> Retype:
         result: Retype = self.visit_Block(node)
-        return [Separators.DeIndent, *result[:-2]]
+        return result[3:-3]
 
     def visit_Goto(self, node: Goto) -> Retype:
         return ["goto", Separators.Space, *self.visit(node.label_name)]
@@ -142,7 +164,7 @@ class Formatter(BasicWalker[Retype]):
             Separators.Space,
         ]
         result: Retype = ["if", *spaced_test, "then", Separators.Statement]
-        result += self.visit(node.true)
+        result += self.visit(node.true)[2:-1]
         current_if: If = node
         while isinstance(current_if.false, If):
             current_if = current_if.false
@@ -152,15 +174,15 @@ class Formatter(BasicWalker[Retype]):
                 Separators.Space,
             ]
             result += ["elseif", *spaced_test, "then", Separators.Statement]
-            result += self.visit(current_if.true)
+            result += self.visit(current_if.true)[2:-1]
         if current_if.false:
             result += ["else", Separators.Statement]
-            result += self.visit(current_if.false)
+            result += self.visit(current_if.false)[2:-1]
         result += ["end"]
         return result
 
     def visit_Index(self, node: Index) -> Retype:
-        return [*self.visit(node.lhs), "[", *self.visit(node.variable_name), "]"]
+        return [*self._format_var(node.lhs), "[", *self.visit(node.variable_name), "]"]
 
     def visit_Label(self, node: Label) -> Retype:
         return ["::", *self.visit(node.label_name), "::"]
@@ -178,7 +200,7 @@ class Formatter(BasicWalker[Retype]):
         return [
             "repeat",
             Separators.Statement,
-            *self.visit(node.body),
+            *self.visit(node.body)[2:-1],
             "until",
             Separators.Space,
             *self.visit(node.condition),
@@ -188,12 +210,39 @@ class Formatter(BasicWalker[Retype]):
         return [";"]
 
     def visit_String(self, node: String) -> Retype:
-        if "\n" in node.value:
+        escaped: str = ""
+        quote: str = '"'
+        contains_newline: bool = False
+        contains_unprintable: bool = False
+        single_quote_count: int = 0
+        double_quote_count: int = 0
+        for char in node.value:
+            if char == "\n":
+                contains_newline = True
+            elif char == "'":
+                single_quote_count += 1
+            elif char == '"':
+                double_quote_count += 1
+            elif not 32 <= ord(char) < 127:
+                contains_unprintable = True
+        if contains_newline and not contains_unprintable:
             level: int = self._find_level(node.value)
             return [f"[{'=' * level}[{node.value}]{'=' * level}]"]
-        if self.s.USE_SINGLE_QUOTE and node.value.count("'") < node.value.count('"'):
-            return ["'" + node.value.replace("'", "\\'") + "'"]
-        return ['"' + node.value.replace('"', '\\"') + '"']
+        if self.s.USE_SINGLE_QUOTE and single_quote_count < double_quote_count:
+            quote = "'"
+        for char in node.value:
+            if char in (quote, "\\"):
+                escaped += f"\\{char}"
+            elif 32 <= ord(char) < 127:
+                escaped += char
+            elif char in ESCAPE_CHARACTERS:
+                if quote == "" and char == "\n":
+                    escaped += "\n"
+                else:
+                    escaped += f"\\{ESCAPE_CHARACTERS[char]}"
+            else:
+                escaped += f"\\x{ord(char):02x}"
+        return [quote + escaped + quote]
 
     def visit_Table(self, node: Table) -> Retype:
         return ["{", *self._format_args(node.fields), "}"]
@@ -207,10 +256,7 @@ class Formatter(BasicWalker[Retype]):
             Separators.Space,
             *self.visit(node.condition),
             Separators.Space,
-            "do",
-            Separators.Statement,
             *self.visit(node.body),
-            "end",
         ]
 
     def _need_brackets(
@@ -246,19 +292,22 @@ class Formatter(BasicWalker[Retype]):
         return result
 
     def visit_FunctionCall(self, node: FunctionCall) -> Retype:
-        return self.visit(node.function) + self._format_function_args(node.arguments)
+        return self._format_var(node.function) + self._format_function_args(
+            node.arguments
+        )
 
     def visit_FunctionDefinition(self, node: FunctionDefinition) -> Retype:
+        full_name: Retype = Separators.Dot.join(self.visit(name) for name in node.names)
+        if node.method_name:
+            full_name += [":", *self.visit(node.method_name)]
         return [
             "function",
             Separators.Space,
-            *Separators.Dot.join(self.visit(name) for name in node.names),
+            *full_name,
             "(",
             *self._format_args(node.parameters),
             ")",
-            Separators.Statement,
-            *self.visit(node.body),
-            "end",
+            *self.visit(node.body)[1:],
             Separators.Statement,
         ]
 
@@ -272,10 +321,7 @@ class Formatter(BasicWalker[Retype]):
             Separators.Space,
             *self._format_args(node.explist),
             Separators.Space,
-            "do",
-            Separators.Statement,
             *self.visit(node.body),
-            "end",
         ]
 
     def visit_LocalAssign(self, node: LocalAssign) -> Retype:
@@ -296,14 +342,18 @@ class Formatter(BasicWalker[Retype]):
 
     def visit_MethodInvocation(self, node: MethodInvocation) -> Retype:
         return [
-            *self.visit(node.function),
+            *self._format_var(node.function),
             ":",
             *self.visit(node.method),
             *self._format_function_args(node.arguments),
         ]
 
     def visit_NamedIndex(self, node: NamedIndex) -> Retype:
-        return [*self.visit(node.lhs), ".", *self.visit(node.variable_name)]
+        return [
+            *self._format_var(node.lhs),
+            Separators.Dot,
+            *self.visit(node.variable_name),
+        ]
 
     def visit_NumericFor(self, node: NumericFor) -> Retype:
         spaced_name: Retype = [
@@ -316,9 +366,8 @@ class Formatter(BasicWalker[Retype]):
         result += [Separators.Argument, *self.visit(node.stop)]
         if node.step:
             result += [Separators.Argument, *self.visit(node.step)]
-        result += [Separators.Space, "do", Separators.Statement]
+        result.append(Separators.Space)
         result += self.visit(node.body)
-        result += ["end"]
         return result
 
     def visit_UnOp(self, node: UnOp) -> Retype:
@@ -336,7 +385,9 @@ class Formatter(BasicWalker[Retype]):
         return result
 
     def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> Retype:
-        return self.visit(node.function) + self._format_function_args(node.arguments)
+        return self._format_var(node.function) + self._format_function_args(
+            node.arguments
+        )
 
     def visit_ExpFunctionDefinition(self, node: ExpFunctionDefinition) -> Retype:
         return [
@@ -345,14 +396,12 @@ class Formatter(BasicWalker[Retype]):
             "(",
             *self._format_args(node.parameters),
             ")",
-            Separators.Statement,
-            *self.visit(node.body),
-            "end",
+            *self.visit(node.body)[1:],
         ]
 
     def visit_ExpMethodInvocation(self, node: ExpMethodInvocation) -> Retype:
         return [
-            *self.visit(node.function),
+            *self._format_var(node.function),
             ":",
             *self.visit(node.method),
             *self._format_function_args(node.arguments),
@@ -368,9 +417,7 @@ class Formatter(BasicWalker[Retype]):
             "(",
             *self._format_args(node.parameters),
             ")",
-            Separators.Statement,
-            *self.visit(node.body),
-            "end",
+            *self.visit(node.body)[1:],
             Separators.Statement,
         ]
 
@@ -398,20 +445,33 @@ class Formatter(BasicWalker[Retype]):
         return self.visit(node.value)
 
 
-def _sep_required(first: str, second: str) -> bool:
+def sep_required(first: str, second: str) -> bool:
+    """
+    Returns, whether a separator is strictly necessary between 2 tokens
+
+    :param first: last character of first token
+    :param second: first character of second token
+    :return: if the token is required
+    """
     return (
-        first in string.ascii_letters
-        and second in string.ascii_letters
-        or first in string.digits
-        and second in string.ascii_letters
-        or first in string.ascii_letters
-        and second in string.digits
+        first in string.ascii_letters + string.digits
+        and second in string.ascii_letters + string.digits
         or first == "-"
         and second == "-"
     )
 
 
-def _search_token(start_idx: int, direction: int, tokens: Retype) -> str | Separators:
+def search_token(
+    start_idx: int, direction: Literal[1, -1], tokens: Retype
+) -> str | Separators:
+    """
+    Search for a non indent/de-indent token.
+
+    :param start_idx: the first index to search
+    :param direction: in what direction to search, 1 for forwards and -1 for backwards
+    :param tokens: the token stream
+    :return: the closest non-indent token
+    """
     while isinstance(token := tokens[start_idx], Separators) and token in (
         Separators.Indent,
         Separators.DeIndent,
@@ -420,24 +480,39 @@ def _search_token(start_idx: int, direction: int, tokens: Retype) -> str | Separ
     return token
 
 
-def _remove_separators(token_stream: Retype) -> None:
+def remove_separators(token_stream: Retype) -> None:
+    """
+    Remove all seperator tokens that are not strictly necessary.
+
+    :param token_stream: The token stream to filter. Removal happens in-place
+    :return: None
+    """
+    # Add a dummy token so that there is definitely a valid final token to look for
     token_stream.append("/")
     for i in range(len(token_stream) - 2, 0, -1):
         if isinstance(own_token := token_stream[i], Separators):
             if own_token not in (Separators.Space, Separators.Statement):
                 continue
-            previous_token = _search_token(i - 1, -1, token_stream)
-            next_token = _search_token(i + 1, 1, token_stream)
+            previous_token = search_token(i - 1, -1, token_stream)
+            next_token = search_token(i + 1, 1, token_stream)
             if (
                 isinstance(previous_token, Separators)
                 or isinstance(next_token, Separators)
-                or not _sep_required(previous_token[-1], next_token[0])
+                or not sep_required(previous_token[-1], next_token[0])
             ):
                 token_stream.pop(i)
+    # Remove the dummy token again
     token_stream.pop()
 
 
-def _resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
+def resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
+    """
+    Resolves all tokens except for Indent and DeIndent to strings.
+
+    :param token_stream: the token stream to resolve. Resolving happens in-place
+    :param style: The style object
+    :return: None
+    """
     newline: str = (
         style.STATEMENT_SEPARATOR if "\n" in style.STATEMENT_SEPARATOR else "\n"
     )
@@ -455,7 +530,14 @@ def _resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
                 token_stream[i] = newline
 
 
-def _indent(token_stream: Retype, indentation_str: str) -> None:
+def indent(token_stream: Retype, indentation_str: str) -> None:
+    """
+    Indent the token stream, adding indentation_str once per indentation level in front of existing tokens.
+
+    :param token_stream: the token stream to indent. Indentation happens in-place.
+    :param indentation_str: the string to use for indenting
+    :return: None
+    """
     indentation_level: int = 0
     indentation_dirty: bool = False
     for i, token in enumerate(token_stream):
@@ -474,7 +556,13 @@ def _indent(token_stream: Retype, indentation_str: str) -> None:
     assert indentation_level == 0
 
 
-def _join_tokens(token_stream: Retype) -> str:
+def join_tokens(token_stream: Retype) -> str:
+    """
+    Join all tokens into a string, ignoring all remaining Separators.
+
+    :param token_stream: The token stream to join
+    :return: The joined string
+    """
     result: str = ""
     for token in token_stream:
         if isinstance(token, str):
@@ -483,12 +571,19 @@ def _join_tokens(token_stream: Retype) -> str:
 
 
 def format(ast: ASTNode, style: Optional[Type[FormattingStyle]] = None) -> str:
+    """
+    Format an ast tree according to the style class.
+
+    :param ast: The AST Node to format, usually a chunk
+    :param style: Optional style definition
+    :return: Formatted lua
+    """
     style = style or FormattingStyle
     formatter: Formatter = Formatter(style)
     token_stream: Retype = formatter.visit(ast)
     if style.REMOVE_UNNECESSARY_CHARS:
-        _remove_separators(token_stream)
-    token_stream[0:0] = ["--tumfl", Separators.Newline]
-    _resolve_tokens(token_stream, style)
-    _indent(token_stream, style.INDENTATION)
-    return _join_tokens(token_stream)
+        remove_separators(token_stream)
+    token_stream[0:0] = [f"--{style.COMMENT_SEP}tumfl", Separators.Newline]
+    resolve_tokens(token_stream, style)
+    indent(token_stream, style.INDENTATION)
+    return join_tokens(token_stream)

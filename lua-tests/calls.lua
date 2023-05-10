@@ -278,9 +278,9 @@ table.sort({10,9,8,4,19,23,0,0}, function (a,b) return a<b end, "extra arg")
 
 
 -- test for generic load
-local x = "-- a comment\0\0\0\n  x = 10 + \n23; \
+local x = "-- a comment\x00\x00\x00\n  x = 10 + \n23; \
      local a = function () x = 'hi' end; \
-     return '\0'"
+     return '\x00'"
 function read1 (x)
   local i = 0
   return function ()

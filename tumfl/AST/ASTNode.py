@@ -32,7 +32,8 @@ class ASTNode(ABC):
             for i in dir(self)
             if not i.startswith("__")
             # ignore "token" for comparison (and parent check)
-            and i not in ["replace", "parent", "parent_class", "var", "token"]
+            and i
+            not in ["replace", "parent", "parent_class", "var", "token", "comment"]
         )
 
     def parent(self, parent: Optional[ASTNode]) -> None:
