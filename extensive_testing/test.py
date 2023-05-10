@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from tumfl.formatter import MinifiedStyle, format
+from tumfl.formatter import format
 from tumfl.lexer import Lexer, TokenType
 from tumfl.parser import Parser
 
