@@ -30,6 +30,8 @@ class TokenType(Enum):
     TRUE = "true"
     UNTIL = "until"
     WHILE = "while"
+    AS = "as"
+    IS = "is"
     PLUS = "+"
     MINUS = "-"
     MULT = "*"
