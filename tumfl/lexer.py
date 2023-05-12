@@ -64,7 +64,9 @@ def include_typing(do_include: bool) -> None:
 
 
 class Lexer:
-    def __init__(self, text: str, typed: bool = False, ignore_unicode_errors: bool = False) -> None:
+    def __init__(
+        self, text: str, typed: bool = False, ignore_unicode_errors: bool = False
+    ) -> None:
         self.text: str = text
         self.text_by_line: List[str] = text.split("\n")
         self.text_len: int = len(self.text)
@@ -261,7 +263,9 @@ class Lexer:
         try:
             return bytes((base,)).decode("utf-8", self.unicode_errors)
         except UnicodeDecodeError:
-            self.error(f"This library can't handle invalid unicode characters, got {base}")
+            self.error(
+                f"This library can't handle invalid unicode characters, got {base}"
+            )
 
     def _safe_code_point(self, base: int) -> str:
         try:
@@ -311,12 +315,16 @@ class Lexer:
                     for i in range(8):
                         codepoint += self.current_char
                         if self.current_char not in HEX_NUMBER:
-                            self.error("Invalid unicode codepoint, expected hexadecimal number")
+                            self.error(
+                                "Invalid unicode codepoint, expected hexadecimal number"
+                            )
                         self.advance()
                         if self.current_char == "}":
                             break
                     else:
-                        self.error("Unicode codepoints can be at most 2^31 - 1, did not close unicode escape")
+                        self.error(
+                            "Unicode codepoints can be at most 2^31 - 1, did not close unicode escape"
+                        )
                     result += self._safe_code_point(int(codepoint, 16))
                 # handle the decimal character specification case
                 elif self.current_char in NUMBER:

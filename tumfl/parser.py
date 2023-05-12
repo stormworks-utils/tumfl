@@ -30,7 +30,9 @@ class Parser:
         TokenType.ELSE,
     )
 
-    def __init__(self, chunk: str, typed: bool = False, ignore_unicode_errors: bool = False):
+    def __init__(
+        self, chunk: str, typed: bool = False, ignore_unicode_errors: bool = False
+    ):
         self.chunk: str = chunk
         self.lexer: Lexer = Lexer(self.chunk, typed, ignore_unicode_errors)
         self.pos: int = 0

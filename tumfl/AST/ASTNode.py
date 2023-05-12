@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any, Generator, Optional, Generic, TypeVar
 from pathlib import Path
+from typing import Any, Generator, Generic, Optional, TypeVar
 
 from tumfl.Token import Token
 from tumfl.utils import generic_str
@@ -41,7 +41,9 @@ class ASTNode(ABC, Generic[T]):
             not in ["replace", "parent", "parent_class", "var", "token", "comment"]
         )
 
-    def parent(self, parent: Optional[ASTNode], file_name: Optional[Path] = None) -> None:
+    def parent(
+        self, parent: Optional[ASTNode], file_name: Optional[Path] = None
+    ) -> None:
         self.parent_class = parent
         self.file_name = file_name
         for i in self.__dir():
