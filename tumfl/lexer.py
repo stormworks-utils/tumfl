@@ -68,7 +68,6 @@ class Lexer:
         self, text: str, typed: bool = False, ignore_unicode_errors: bool = False
     ) -> None:
         self.text: str = text
-        self.text_by_line: List[str] = text.split("\n")
         self.text_len: int = len(self.text)
         self.line: int = 0
         self.column: int = 0
@@ -86,7 +85,7 @@ class Lexer:
         current_line: int = line if line is not None else self.line
         current_column = column if column is not None else self.column
         print(f"Error on line {current_line + 1}:", file=sys.stderr)
-        print(self.text_by_line[current_line], file=sys.stderr)
+        print(self.text.split("\n")[current_line], file=sys.stderr)
         print(" " * current_column + "^", file=sys.stderr)
         print(message, file=sys.stderr)
         raise LexerError(message, current_line, current_column)
@@ -266,6 +265,7 @@ class Lexer:
             self.error(
                 f"This library can't handle invalid unicode characters, got {base}"
             )
+            assert False
 
     def _safe_code_point(self, base: int) -> str:
         try:
@@ -312,7 +312,7 @@ class Lexer:
                         self.error("Invalid character after \\u, expected {")
                     self.advance()
                     codepoint: str = ""
-                    for i in range(8):
+                    for _ in range(8):
                         codepoint += self.current_char
                         if self.current_char not in HEX_NUMBER:
                             self.error(
