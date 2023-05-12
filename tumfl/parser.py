@@ -46,9 +46,10 @@ class Parser:
         current_line: int = token.line
         current_column = token.column
         print(f"Error on line {current_line}:", file=sys.stderr)
+        lines: list[str] = self.chunk.split("\n")
         if current_line > 1:
-            print(self.lexer.text_by_line[current_line - 2], file=sys.stderr)
-        print(self.lexer.text_by_line[current_line - 1], file=sys.stderr)
+            print(lines[current_line - 2], file=sys.stderr)
+        print(lines[current_line - 1], file=sys.stderr)
         print(" " * (current_column - 1) + "^", file=sys.stderr)
         print(message, file=sys.stderr)
         if self.context_hints:
