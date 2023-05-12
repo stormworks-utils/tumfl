@@ -8,18 +8,18 @@ if TYPE_CHECKING:
     from .parser import Hint
 
 
-class TumflException(Exception):
+class TumflError(Exception):
     ...
 
 
-class ParserException(TumflException):
+class ParserError(TumflError):
     def __init__(self, message: str, hints: list[Hint], token: Token):
         super().__init__(message)
         self.hints: list[Hint] = hints
         self.token: Token = token
 
 
-class LexerException(TumflException):
+class LexerError(TumflError):
     def __init__(self, message: str, line: int, column: int):
         super().__init__(message)
         self.line: int = line

@@ -5,7 +5,7 @@ from typing import Callable, NoReturn, Optional
 
 from .AST import *
 from .AST.BaseFunctionDefinition import BaseFunctionDefinition
-from .error import ParserException
+from .error import ParserError
 from .lexer import Lexer
 from .Token import Token, TokenType
 
@@ -30,13 +30,14 @@ class Parser:
         TokenType.ELSE,
     )
 
-    def __init__(self, chunk: str):
+    def __init__(self, chunk: str, typed: bool = False, ignore_unicode_errors: bool = False):
         self.chunk: str = chunk
-        self.lexer: Lexer = Lexer(self.chunk)
+        self.lexer: Lexer = Lexer(self.chunk, typed, ignore_unicode_errors)
         self.pos: int = 0
         self.current_token: Token = self.lexer.get_next_token()
         self.next_token: Token = self.lexer.get_next_token()
         self.context_hints: list[Hint] = []
+        self.typed: bool = typed
 
     def _error(self, message: str, token: Token) -> NoReturn:
         """Throw an error, prints out a description, and finally throws a value error"""
@@ -54,7 +55,7 @@ class Parser:
                 " -> ".join(str(hint) for hint in self.context_hints),
                 file=sys.stderr,
             )
-        raise ParserException(message, self.context_hints, token)
+        raise ParserError(message, self.context_hints, token)
 
     def _assert(self, token_type: TokenType) -> None:
         """Assert that the current token is of a certain kind"""

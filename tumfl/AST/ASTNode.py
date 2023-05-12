@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any, Generator, Optional
+from typing import Any, Generator, Optional, Generic, TypeVar
+from pathlib import Path
 
 from tumfl.Token import Token
 from tumfl.utils import generic_str
 
+T = TypeVar("T")
 
-class ASTNode(ABC):
+
+class ASTNode(ABC, Generic[T]):
     """Base class for all AST nodes"""
 
     def __init__(self, token: Token, name: str) -> None:
         self.name: str = name
         self.token: Token = token
         self.parent_class: Optional[ASTNode] = None
+        self.file_name: Optional[Path] = None
+        self.attributes: Optional[T] = None
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
@@ -36,12 +41,13 @@ class ASTNode(ABC):
             not in ["replace", "parent", "parent_class", "var", "token", "comment"]
         )
 
-    def parent(self, parent: Optional[ASTNode]) -> None:
+    def parent(self, parent: Optional[ASTNode], file_name: Optional[Path] = None) -> None:
         self.parent_class = parent
+        self.file_name = file_name
         for i in self.__dir():
             node: Any = getattr(self, i)
             if isinstance(node, ASTNode):
-                node.parent(self)
+                node.parent(self, file_name)
 
     def replace_child(self, to_replace: ASTNode, replacement: ASTNode) -> None:
         for i in self.__dir():

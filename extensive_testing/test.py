@@ -9,8 +9,8 @@ from tumfl.parser import Parser
 
 class ExtensiveTesting(unittest.TestCase):
     files: list[tuple[str, str]] = []
-    # Ignored due to unicode escapes missing
-    ignored_files: list[str] = ["utf8.lua", "strings.lua", "literals.lua"]
+    # Ignored due to invalid codepoints
+    ignored_files: list[str] = []
 
     def setUp(self) -> None:
         test_dir: Path = Path("lua-tests")
@@ -25,14 +25,14 @@ class ExtensiveTesting(unittest.TestCase):
     def test_lexer(self) -> None:
         for filename, file_content in self.files:
             print(f"Testing lexing {filename}", file=sys.stderr)
-            lex = Lexer(file_content)
+            lex = Lexer(file_content, ignore_unicode_errors=True)
             while lex.get_next_token().type != TokenType.EOF:
                 ...
 
     def test_parser(self) -> None:
         for filename, file_content in self.files:
             print(f"Testing parsing {filename}", file=sys.stderr)
-            parser = Parser(file_content)
+            parser = Parser(file_content, ignore_unicode_errors=True)
             parser.parse_chunk()
             self.assertEqual(len(parser.context_hints), 0)
             self.assertEqual(parser.current_token.type, TokenType.EOF)
@@ -40,7 +40,7 @@ class ExtensiveTesting(unittest.TestCase):
     def _test_formatter(self) -> None:
         for filename, file_content in self.files:
             print(f"Testing formatting {filename}", file=sys.stderr)
-            chunk = Parser(file_content).parse_chunk()
+            chunk = Parser(file_content, ignore_unicode_errors=True).parse_chunk()
             formatted = format(chunk)
-            new_chunk = Parser(formatted).parse_chunk()
+            new_chunk = Parser(formatted, ignore_unicode_errors=True).parse_chunk()
             self.assertEqual(chunk, new_chunk)

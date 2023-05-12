@@ -196,7 +196,7 @@ class TestFormatter(unittest.TestCase):
 
     def test_String(self):
         parser = Parser(
-            "'abc''def\"'[[ghi\njkl]][[mno'\"\"]][===[[[=[==[\n]===]'\\\\1\\255\x00'"
+            "'abc''def\"'[[ghi\njkl]][[mno'\"\"]][===[[[=[==[\n]===]'\\\\1\\x00'"
         )
         exp = parser._parse_exp()
         expected = ['"abc"']
@@ -221,7 +221,7 @@ class TestFormatter(unittest.TestCase):
         self.assertEqual(self.normal.visit(exp), expected)
         self.assertEqual(self.minified.visit(exp), expected)
         exp = parser._parse_exp()
-        expected = ['"\\\\1\\xff\\x00"']
+        expected = ['"\\\\1\\x00"']
         self.assertEqual(self.normal.visit(exp), expected)
 
     def test_Table(self):

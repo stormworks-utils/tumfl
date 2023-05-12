@@ -1,7 +1,7 @@
 import sys
 from typing import Dict, List, NoReturn, Optional, Tuple, TypedDict
 
-from .error import LexerException
+from .error import LexerError
 from .Token import Token, TokenType
 
 RESERVED_KEYWORDS: Dict[str, TokenType] = {
@@ -48,8 +48,23 @@ class TokenArgs(TypedDict):
     comment: list[str]
 
 
+def include_typing(do_include: bool) -> None:
+    """
+    Change the keywords to include typing
+
+    :param do_include: whether to include typing keywords
+    :return: None
+    """
+    if do_include and "as" not in RESERVED_KEYWORDS:
+        RESERVED_KEYWORDS["as"] = TokenType.AS
+        RESERVED_KEYWORDS["is"] = TokenType.IS
+    elif not do_include and "as" in RESERVED_KEYWORDS:
+        RESERVED_KEYWORDS.pop("as")
+        RESERVED_KEYWORDS.pop("is")
+
+
 class Lexer:
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, typed: bool = False, ignore_unicode_errors: bool = False) -> None:
         self.text: str = text
         self.text_by_line: List[str] = text.split("\n")
         self.text_len: int = len(self.text)
@@ -60,6 +75,8 @@ class Lexer:
         self.current_char: Optional[str] = self.text[self.pos]
         self.last_hint: Optional[Tuple[str, int, int]] = None
         self.comments: list[str] = []
+        self.unicode_errors: str = "ignore" if ignore_unicode_errors else "strict"
+        include_typing(typed)
 
     def error(
         self, message: str, line: Optional[int] = None, column: Optional[int] = None
@@ -70,7 +87,7 @@ class Lexer:
         print(self.text_by_line[current_line], file=sys.stderr)
         print(" " * current_column + "^", file=sys.stderr)
         print(message, file=sys.stderr)
-        raise LexerException(message, current_line, current_column)
+        raise LexerError(message, current_line, current_column)
 
     def get_token_args(self) -> TokenArgs:
         comment: list[str] = self.comments[:]
@@ -240,6 +257,20 @@ class Lexer:
             self.advance()
         return result
 
+    def _safe_decode(self, base: int) -> str:
+        try:
+            return bytes((base,)).decode("utf-8", self.unicode_errors)
+        except UnicodeDecodeError:
+            self.error(f"This library can't handle invalid unicode characters, got {base}")
+
+    def _safe_code_point(self, base: int) -> str:
+        try:
+            return chr(base)
+        except ValueError:
+            if self.unicode_errors == "strict":
+                self.error(f"Invalid unicode codepoint, got {base}")
+        return ""
+
     def get_string(self) -> str:
         assert self.current_char in ["'", '"']
         # character that is needed to close the string
@@ -270,9 +301,23 @@ class Lexer:
                     if self.current_char not in HEX_NUMBER:
                         self.error("Invalid hex digit", column=column)
                     self.advance()
-                    result += chr(int(digits, 16))
+                    result += self._safe_decode(int(digits, 16))
                 elif self.current_char == "u":
-                    print("Warning: ignoring unicode escape", file=sys.stderr)
+                    self.advance()
+                    if self.current_char != "{":
+                        self.error("Invalid character after \\u, expected {")
+                    self.advance()
+                    codepoint: str = ""
+                    for i in range(8):
+                        codepoint += self.current_char
+                        if self.current_char not in HEX_NUMBER:
+                            self.error("Invalid unicode codepoint, expected hexadecimal number")
+                        self.advance()
+                        if self.current_char == "}":
+                            break
+                    else:
+                        self.error("Unicode codepoints can be at most 2^31 - 1, did not close unicode escape")
+                    result += self._safe_code_point(int(codepoint, 16))
                 # handle the decimal character specification case
                 elif self.current_char in NUMBER:
                     digits = self.current_char
@@ -287,7 +332,7 @@ class Lexer:
                     char: int = int(digits)
                     if char > 255:
                         self.error(f"Invalid char with number {char}", column=column)
-                    result += chr(char)
+                    result += self._safe_decode(char)
                 else:
                     # handle all simple escape sequences
                     if self.current_char not in ESCAPE_CODES:

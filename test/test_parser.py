@@ -3,7 +3,7 @@ import unittest
 from tumfl.AST import *
 from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
 from tumfl.lexer import Lexer
-from tumfl.parser import Parser, ParserException
+from tumfl.parser import Parser, ParserError
 from tumfl.Token import Token, TokenType
 
 
@@ -131,7 +131,7 @@ class TestParser(unittest.TestCase):
 
     def test_error(self):
         parser = Parser("1+")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser._parse_exp()
 
     def test_unary_expr(self):
@@ -163,10 +163,10 @@ class TestParser(unittest.TestCase):
 
     def test_wrong_token(self):
         parser = Parser("a,b+")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser.parse_chunk()
         parser = Parser("a=1\nb,c+")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser.parse_chunk()
 
     def test_parse_var(self):
@@ -320,10 +320,10 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("(a,b")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser._parse_args()
         parser = Parser("(a,b,)")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser._parse_args()
         parser = Parser('"abc"')
         self.assertEqual(parser._parse_args(), [self.parse_string("abc")])
@@ -358,10 +358,10 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
         parser = Parser("a,")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser._parse_name_list()
         parser = Parser("a, 1")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser._parse_name_list()
 
     def test_parse_vararg(self):
@@ -597,7 +597,7 @@ class TestParser(unittest.TestCase):
 
     def test_parse_unknown_local(self):
         parser = Parser("local and")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser.parse_chunk()
 
     def test_parse_function(self):
@@ -692,7 +692,7 @@ class TestParser(unittest.TestCase):
 
     def test_parse_unknown_for(self):
         parser = Parser("for name and")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser.parse_chunk()
 
     def test_parse_if(self):
@@ -859,7 +859,7 @@ class TestParser(unittest.TestCase):
 
     def test_unexpected_statement(self):
         parser = Parser("+")
-        with self.assertRaises(ParserException):
+        with self.assertRaises(ParserError):
             parser.parse_chunk()
 
     def test_weird_stuff(self):
