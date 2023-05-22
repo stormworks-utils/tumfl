@@ -50,6 +50,13 @@ class ASTNode(ABC, Generic[T]):
             node: Any = getattr(self, i)
             if isinstance(node, ASTNode):
                 node.parent(self, file_name)
+            elif (
+                isinstance(node, list)
+                and len(node) > 0
+                and isinstance(node[0], ASTNode)
+            ):
+                for node in node:
+                    node.parent(self, file_name)
 
     def replace_child(self, to_replace: ASTNode, replacement: ASTNode) -> None:
         for i in self.__dir():
