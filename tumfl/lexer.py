@@ -71,12 +71,13 @@ class Lexer:
         self.text_len: int = len(self.text)
         self.line: int = 0
         self.column: int = 0
-        self.pos: int = 0
+        self.pos: int = -1
         self.newline_warn: int = 0
-        self.current_char: Optional[str] = self.text[self.pos]
+        self.current_char: Optional[str] = None
         self.last_hint: Optional[Tuple[str, int, int]] = None
         self.comments: list[str] = []
         self.unicode_errors: str = "ignore" if ignore_unicode_errors else "strict"
+        self.advance()
         include_typing(typed)
 
     def error(

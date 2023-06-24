@@ -304,3 +304,8 @@ class TestEllipsis(unittest.TestCase):
         self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "a", 0, 0))
         self.assertEqual(lex.get_next_token(), Token(TokenType.ELLIPSIS, "...", 0, 0))
         self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "b", 0, 0))
+
+class EmptyTest(unittest.TestCase):
+    def test_empty(self):
+        lex = Lexer("")
+        self.assertEqual(lex.get_next_token().type, TokenType.EOF)
