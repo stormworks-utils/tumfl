@@ -109,7 +109,7 @@ class Parser:
                 not in (TokenType.SEMICOLON,) + self._BLOCK_END_TYPES
             ):
                 block.returns = self._parse_exp_list()
-            if self.current_token.type == TokenType.SEMICOLON:
+            if self.current_token.type == TokenType.SEMICOLON:  # type: ignore
                 self._eat_token()
         if expect_end:
             self._eat_token(TokenType.END)
@@ -362,7 +362,7 @@ class Parser:
         parameters: list[Name | Vararg] = []
         if self.current_token.type == TokenType.NAME:
             parameters.extend(self._parse_name_list(leave_vararg=True))
-            if self.current_token.type == TokenType.ELLIPSIS:
+            if self.current_token.type == TokenType.ELLIPSIS:  # type: ignore
                 self._switch_hint("varargs")
                 parameters.append(Vararg.from_token(self.current_token))
                 self._eat_token()
@@ -869,7 +869,7 @@ class Parser:
         expressions: list[Expression] = []
         if self.current_token.type == TokenType.L_PAREN:
             self._eat_token()
-            if self.current_token.type != TokenType.R_PAREN:
+            if self.current_token.type != TokenType.R_PAREN:  # type: ignore
                 expressions = self._parse_exp_list()
             self._eat_token(TokenType.R_PAREN)
         elif self.current_token.type == TokenType.L_CURL:
