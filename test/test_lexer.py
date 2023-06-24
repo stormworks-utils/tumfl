@@ -306,6 +306,12 @@ class TestEllipsis(unittest.TestCase):
         self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "b", 0, 0))
 
 
+class TestShebang(unittest.TestCase):
+    def test_shebang(self):
+        lex = Lexer("#!abc\na")
+        self.assertEqual(lex.get_next_token().type, TokenType.NAME)
+
+
 class EmptyTest(unittest.TestCase):
     def test_empty(self):
         lex = Lexer("")

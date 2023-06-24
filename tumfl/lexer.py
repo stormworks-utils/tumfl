@@ -70,7 +70,7 @@ class Lexer:
         self.text: str = text
         self.text_len: int = len(self.text)
         self.line: int = 0
-        self.column: int = 0
+        self.column: int = -1
         self.pos: int = -1
         self.newline_warn: int = 0
         self.current_char: Optional[str] = None
