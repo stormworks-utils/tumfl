@@ -1,9 +1,17 @@
 import unittest
 
 from tumfl.AST import Block, ExpFunctionDefinition, If
-from tumfl.formatter import (Formatter, FormattingStyle, MinifiedStyle,
-                             Separators, format, indent, remove_separators,
-                             resolve_tokens, sep_required)
+from tumfl.formatter import (
+    Formatter,
+    FormattingStyle,
+    MinifiedStyle,
+    Separators,
+    format,
+    indent,
+    remove_separators,
+    resolve_tokens,
+    sep_required,
+)
 from tumfl.parser import Parser
 
 

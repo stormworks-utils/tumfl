@@ -11,8 +11,12 @@ from .Nil import Nil
 from .Number import Number
 from .String import String
 from .Table import Table
-from .TableField import (ExplicitTableField, NamedTableField,
-                         NumberedTableField, TableField)
+from .TableField import (
+    ExplicitTableField,
+    NamedTableField,
+    NumberedTableField,
+    TableField,
+)
 from .UnOp import UnaryOperand, UnOp
 from .Vararg import Vararg
 from .Variable import Variable

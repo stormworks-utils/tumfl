@@ -1,9 +1,13 @@
 import unittest
 from pathlib import Path
 
-from tumfl.dependency_resolver import (Chunk, FunctionCall,
-                                       InvalidDependencyError, Semicolon,
-                                       resolve_recursive)
+from tumfl.dependency_resolver import (
+    Chunk,
+    FunctionCall,
+    InvalidDependencyError,
+    Semicolon,
+    resolve_recursive,
+)
 
 
 class TestDependencyResolver(unittest.TestCase):
