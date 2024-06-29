@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class TumflError(Exception):
-    ...
+    pass
 
 
 class ParserError(TumflError):

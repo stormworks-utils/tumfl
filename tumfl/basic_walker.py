@@ -184,26 +184,26 @@ class BasicWalker(NodeVisitor, Generic[T], ABC):
 
 class NoneWalker(BasicWalker[None]):
     def visit_Boolean(self, node: Boolean) -> None:
-        ...
+        pass
 
     def visit_Name(self, node: Name) -> None:
-        ...
+        pass
 
     def visit_Nil(self, node: Nil) -> None:
-        ...
+        pass
 
     def visit_Number(self, node: Number) -> None:
-        ...
+        pass
 
     def visit_String(self, node: String) -> None:
-        ...
+        pass
 
     def visit_Table(self, node: Table) -> None:
         for field in node.fields:
             self.visit(field)
 
     def visit_Vararg(self, node: Vararg) -> None:
-        ...
+        pass
 
     def visit_Assign(self, node: Assign) -> None:
         for target in node.targets:
@@ -220,7 +220,7 @@ class NoneWalker(BasicWalker[None]):
                 self.visit(expr)
 
     def visit_Break(self, node: Break) -> None:
-        ...
+        pass
 
     def visit_Goto(self, node: Goto) -> None:
         self.visit(node.label_name)
@@ -233,4 +233,4 @@ class NoneWalker(BasicWalker[None]):
             self.visit(var.name)
 
     def visit_Semicolon(self, node: Semicolon) -> None:
-        ...
+        pass
