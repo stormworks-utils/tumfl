@@ -208,7 +208,7 @@ class TestFormatter(unittest.TestCase):
         expected = ["'def\"'"]
         self.assertEqual(self.minified.visit(exp), expected)
         exp = parser._parse_exp()
-        expected = ["[[ghi\njkl]]"]
+        expected = ['"ghi\\njkl"']
         self.assertEqual(self.normal.visit(exp), expected)
         self.assertEqual(self.minified.visit(exp), expected)
         exp = parser._parse_exp()
@@ -217,7 +217,7 @@ class TestFormatter(unittest.TestCase):
         expected = ["'mno\\'\"\"'"]
         self.assertEqual(self.minified.visit(exp), expected)
         exp = parser._parse_exp()
-        expected = ["[===[[[=[==[\n]===]"]
+        expected = ['"[[=[==[\\n"']
         self.assertEqual(self.normal.visit(exp), expected)
         self.assertEqual(self.minified.visit(exp), expected)
         exp = parser._parse_exp()
