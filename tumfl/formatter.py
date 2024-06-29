@@ -33,6 +33,8 @@ class FormattingStyle:
     ADD_CLOSE_BRACKETS: bool = True
     # Add a space around `=` in table constructors
     SPACE_IN_TABLE: bool = True
+    # highest number of newline characters before using a multiline string
+    NEWLINE_LIMIT: int = 4
 
 
 class MinifiedStyle(FormattingStyle):
@@ -46,6 +48,7 @@ class MinifiedStyle(FormattingStyle):
     USE_SINGLE_QUOTE = True
     USE_CALL_SHORTHAND = True
     REMOVE_UNNECESSARY_CHARS = True
+    NEWLINE_LIMIT = 1
 
 
 class Separators(Enum):
@@ -212,20 +215,21 @@ class Formatter(BasicWalker[Retype]):
     def visit_String(self, node: String) -> Retype:
         escaped: str = ""
         quote: str = '"'
-        contains_newline: bool = False
         contains_unprintable: bool = False
         single_quote_count: int = 0
         double_quote_count: int = 0
+        newline_count: int = 0
         for char in node.value:
             if char == "\n":
-                contains_newline = True
+                newline_count += 1
             elif char == "'":
                 single_quote_count += 1
             elif char == '"':
                 double_quote_count += 1
             elif not 32 <= ord(char) < 127:
                 contains_unprintable = True
-        if contains_newline and not contains_unprintable:
+        # do not use multiline strings if the number of newlines is too low
+        if newline_count > self.s.NEWLINE_LIMIT and not contains_unprintable:
             level: int = self._find_level(node.value)
             return [f"[{'=' * level}[{node.value}]{'=' * level}]"]
         if self.s.USE_SINGLE_QUOTE and single_quote_count < double_quote_count:
@@ -236,10 +240,7 @@ class Formatter(BasicWalker[Retype]):
             elif 32 <= ord(char) < 127:
                 escaped += char
             elif char in ESCAPE_CHARACTERS:
-                if quote == "" and char == "\n":
-                    escaped += "\n"
-                else:
-                    escaped += f"\\{ESCAPE_CHARACTERS[char]}"
+                escaped += f"\\{ESCAPE_CHARACTERS[char]}"
             else:
                 escaped += f"\\x{ord(char):02x}"
         return [quote + escaped + quote]
