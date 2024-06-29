@@ -8,6 +8,7 @@ from .Expression import Expression
 
 
 class BinaryOperand(Enum):
+    # pylint: disable=duplicate-code
     PLUS = "+"
     MINUS = "-"
     MULT = "*"

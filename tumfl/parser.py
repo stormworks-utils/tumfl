@@ -284,7 +284,6 @@ class Parser:
         if self.current_token.type in (TokenType.COMMA, TokenType.IN):
             return self._parse_iterative_for(for_token, first_name)
         self._error("unexpected for condition", self.current_token)
-        assert False
 
     def _parse_numeric_for(self, for_token: Token, name: Name) -> NumericFor:
         """
@@ -391,7 +390,6 @@ class Parser:
         if self.current_token.type == TokenType.NAME:
             return self._parse_local_assignment(local_token)
         self._error("Unexpected symbol after local", self.current_token)
-        assert False
 
     def _parse_local_function(self, local_token: Token) -> LocalFunctionDefinition:
         """
@@ -709,7 +707,6 @@ class Parser:
         if token.type in (TokenType.L_PAREN, TokenType.NAME):
             return self._parse_var()
         self._error("Unexpected expression", self.current_token)
-        assert False
 
     def _parse_name_list(
         self, first_name: Optional[Name] = None, leave_vararg: bool = False

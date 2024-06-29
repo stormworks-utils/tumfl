@@ -166,7 +166,6 @@ class Lexer:
             inner_string += self.current_char
             self.advance()
         self.error("long brackets never closed", line, column)
-        assert False
 
     def skip_comment(self) -> None:
         """Skip a comment (long or short)"""
@@ -266,7 +265,6 @@ class Lexer:
             self.error(
                 f"This library can't handle invalid unicode characters, got {base}"
             )
-            assert False
 
     def _safe_code_point(self, base: int) -> str:
         try:
