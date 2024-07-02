@@ -35,6 +35,10 @@ class FormattingStyle:
     SPACE_IN_TABLE: bool = True
     # highest number of newline characters before using a multiline string
     NEWLINE_LIMIT: int = 4
+    # How big lines may be. Note: there is no guarantee that this will be honored. Use 0 for no limit
+    LINE_WIDTH: int = 120
+    # Number of lines in a block to add spacers before and after the block. Use 0 to disable
+    BLOCK_SPACER: int = 5
 
 
 class MinifiedStyle(FormattingStyle):
@@ -49,6 +53,8 @@ class MinifiedStyle(FormattingStyle):
     USE_CALL_SHORTHAND = True
     REMOVE_UNNECESSARY_CHARS = True
     NEWLINE_LIMIT = 1
+    LINE_WIDTH = 0
+    BLOCK_SPACER = 0
 
 
 class Separators(Enum):
@@ -59,12 +65,16 @@ class Separators(Enum):
     Dot: str = "."
     Indent: str = "indent"
     DeIndent: str = "de-indent"
+    Block: str = "block"
 
     def join(self, to_join: Iterator[Retype]) -> Retype:
         join_list: list[Retype] = list(to_join)
         for i in range(len(join_list) - 1, 0, -1):
             join_list[i:i] = [[self]]
         return [elem for part in join_list for elem in part]
+
+    def __repr__(self) -> str:
+        return f"Separators.{self.name}"
 
 
 Retype = list[str | Separators]
@@ -135,7 +145,7 @@ class Formatter(BasicWalker[Retype]):
         ]
 
     def visit_Block(self, node: Block) -> Retype:
-        result: Retype = ["do", Separators.Statement, Separators.Indent]
+        result: Retype = ["do", Separators.Block, Separators.Indent]
         for statement in node.statements:
             if self.s.INCLUDE_COMMENTS and statement.comment:
                 for comment in statement.comment:
@@ -166,7 +176,7 @@ class Formatter(BasicWalker[Retype]):
             *self.visit(node.test),
             Separators.Space,
         ]
-        result: Retype = ["if", *spaced_test, "then", Separators.Statement]
+        result: Retype = ["if", *spaced_test, "then", Separators.Block]
         result += self.visit(node.true)[2:-1]
         current_if: If = node
         while isinstance(current_if.false, If):
@@ -176,10 +186,10 @@ class Formatter(BasicWalker[Retype]):
                 *self.visit(current_if.test),
                 Separators.Space,
             ]
-            result += ["elseif", *spaced_test, "then", Separators.Statement]
+            result += ["elseif", *spaced_test, "then", Separators.Block]
             result += self.visit(current_if.true)[2:-1]
         if current_if.false:
-            result += ["else", Separators.Statement]
+            result += ["else", Separators.Block]
             result += self.visit(current_if.false)[2:-1]
         result += ["end"]
         return result
@@ -202,7 +212,7 @@ class Formatter(BasicWalker[Retype]):
     def visit_Repeat(self, node: Repeat) -> Retype:
         return [
             "repeat",
-            Separators.Statement,
+            Separators.Block,
             *self.visit(node.body)[2:-1],
             "until",
             Separators.Space,
@@ -302,6 +312,7 @@ class Formatter(BasicWalker[Retype]):
         if node.method_name:
             full_name += [":", *self.visit(node.method_name)]
         return [
+            Separators.Newline,
             "function",
             Separators.Space,
             *full_name,
@@ -309,7 +320,8 @@ class Formatter(BasicWalker[Retype]):
             *self._format_args(node.parameters),
             ")",
             *self.visit(node.body)[1:],
-            Separators.Statement,
+            Separators.Block,
+            Separators.Newline,
         ]
 
     def visit_IterativeFor(self, node: IterativeFor) -> Retype:
@@ -410,6 +422,7 @@ class Formatter(BasicWalker[Retype]):
 
     def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> Retype:
         return [
+            Separators.Newline,
             "local",
             Separators.Space,
             "function",
@@ -420,6 +433,7 @@ class Formatter(BasicWalker[Retype]):
             ")",
             *self.visit(node.body)[1:],
             Separators.Statement,
+            Separators.Newline,
         ]
 
     def visit_ExplicitTableField(self, node: ExplicitTableField) -> Retype:
@@ -492,7 +506,11 @@ def remove_separators(token_stream: Retype) -> None:
     token_stream.append("/")
     for i in range(len(token_stream) - 2, 0, -1):
         if isinstance(own_token := token_stream[i], Separators):
-            if own_token not in (Separators.Space, Separators.Statement):
+            if own_token not in (
+                Separators.Space,
+                Separators.Statement,
+                Separators.Block,
+            ):
                 continue
             previous_token = search_token(i - 1, -1, token_stream)
             next_token = search_token(i + 1, 1, token_stream)
@@ -504,6 +522,207 @@ def remove_separators(token_stream: Retype) -> None:
                 token_stream.pop(i)
     # Remove the dummy token again
     token_stream.pop()
+
+
+def __get_indentation_width(style: Type[FormattingStyle]) -> int:
+    return len(style.INDENTATION.replace("\t", "    "))
+
+
+def __estimate_width(
+    indentation: int,
+    stream: Retype,
+    style: Type[FormattingStyle],
+    with_indentation: bool = True,
+) -> Optional[int]:
+    """
+    Estimate the width of a stream
+
+    :param indentation: indentation of the stream
+    :param stream: The stream to estimate
+    :param style: Formatting style to apply
+    :return: None if multiline, estimated width otherwise
+    """
+    size: int = 0
+    if with_indentation:
+        size = indentation * __get_indentation_width(style)
+    for token in stream:
+        match token:
+            case Separators.Space | Separators.Dot:
+                size += 1
+            case Separators.Argument:
+                size += len(style.ARGUMENT_SEPARATOR)
+            case Separators.Newline | Separators.Statement | Separators.Block:
+                return None
+            case Separators.Indent | Separators.DeIndent:
+                pass
+            case literal_string:
+                if "\n" in literal_string:
+                    return None
+                size += len(literal_string)
+    return size
+
+
+def __get_newline_pos(input_string: str, max_pos: int) -> int:
+    if len(input_string) < max_pos:
+        return len(input_string)
+    current_pos: int = max_pos
+    while current_pos > 1:
+        is_end: bool = current_pos == len(input_string)
+        is_allowed: bool = is_end or not input_string[current_pos].isspace()
+        is_word_break: bool = not input_string[current_pos - 1].isalnum()
+        if is_allowed and is_word_break:
+            return current_pos
+        current_pos -= 1
+    while current_pos < len(input_string):
+        ...
+    return max_pos
+
+
+def __string_ident(
+    input_string: str, indentation: int, style: Type[FormattingStyle]
+) -> Retype:
+    start: str = input_string[0]
+    assert start in "'\""
+    assert input_string[-1] == start
+    width = __estimate_width(indentation, [input_string], style)
+    if width and width <= style.LINE_WIDTH:
+        return [input_string]
+    raw_indentation: int = indentation * __get_indentation_width(style) + 2
+    result: Retype = []
+    while input_string:
+        pos = __get_newline_pos(input_string, style.LINE_WIDTH - raw_indentation)
+        result.append(input_string[:pos] + "\\z")
+        result.append(Separators.Newline)
+        input_string = input_string[pos:]
+    # remove last newline
+    result.pop()
+    last_string = result[-1]
+    assert isinstance(last_string, str)
+    # remove last \z
+    result[-1] = last_string[:-2]
+    return result
+
+
+MATCHING_BRACKETS: dict[str, str] = {"}": "{", "]": "[", ")": "("}
+
+
+def __inner_indent(
+    token_stream: Retype, index: int, indentation: int, style: Type[FormattingStyle]
+) -> tuple[int, Retype]:
+    opening: str | Separators = token_stream[index]
+    assert opening in MATCHING_BRACKETS
+    closing: str = MATCHING_BRACKETS[opening]  # type: ignore
+    # lua functions don't allow trailing argument separators
+    use_trailing: bool = opening != ")"
+    components: list[Retype] = []
+    current_component: Retype = []
+    index -= 1
+    while True:
+        current_char = token_stream[index]
+        if current_char == closing:
+            break
+        if current_char in MATCHING_BRACKETS:
+            index, content = __inner_indent(token_stream, index, indentation + 1, style)
+            current_component[0:0] = content
+        elif current_char == Separators.Argument:
+            components.insert(0, current_component)
+            current_component = []
+        elif isinstance(current_char, str) and (
+            current_char.startswith('"') or current_char.startswith("'")
+        ):
+            current_component[0:0] = __string_ident(
+                current_char, indentation + 1, style
+            )
+        else:
+            current_component.insert(0, current_char)
+        index -= 1
+    if current_component:
+        components.insert(0, current_component)
+    width: int = 0
+    for component in components:
+        current_width: Optional[int] = __estimate_width(
+            indentation, component, style, with_indentation=False
+        )
+        if current_width is None:
+            width = style.LINE_WIDTH + 1
+            break
+        width += current_width + len(style.ARGUMENT_SEPARATOR)
+    if (
+        width + 2 + indentation * __get_indentation_width(style) <= style.LINE_WIDTH
+        or len(components) <= 1
+    ):
+        return index, [closing, *Separators.Argument.join(iter(components)), opening]
+    result: Retype = [closing, Separators.Indent, Separators.Newline]
+    for component in components:
+        result.extend(component)
+        result.append(Separators.Argument)
+        result.append(Separators.Newline)
+    if not use_trailing:
+        result.pop(len(result) - 2)
+    result.append(Separators.DeIndent)
+    result.append(opening)
+    return index, result
+
+
+def indent_brackets(token_stream: Retype, style: Type[FormattingStyle]) -> None:
+    indentation: int = 0
+    index = len(token_stream) - 1
+    while index >= 0:
+        token = token_stream[index]
+        # iterating backwards
+        if token == Separators.DeIndent:
+            indentation += 1
+        elif token == Separators.Indent:
+            indentation -= 1
+        elif token in MATCHING_BRACKETS:
+            start_index = index
+            index, content = __inner_indent(token_stream, index, indentation, style)
+            token_stream[index : start_index + 1] = content
+        elif isinstance(token, str) and (
+            token.startswith('"') or token.startswith("'")
+        ):
+            token_stream[index : index + 1] = __string_ident(token, indentation, style)
+        index -= 1
+
+
+def __inner_add_spacing(
+    token_stream: Retype, index: int, to_add: set[int], style: Type[FormattingStyle]
+) -> tuple[int, int]:
+    last_statement_idx: Optional[int] = None
+    total_line_breaks: int = 0
+    current_line_breaks: int = 0
+    while index < len(token_stream):
+        token = token_stream[index]
+        if token == Separators.Indent:
+            index, newlines = __inner_add_spacing(
+                token_stream, index + 1, to_add, style
+            )
+            current_line_breaks += newlines
+        elif token == Separators.DeIndent:
+            return index, total_line_breaks + current_line_breaks
+        elif token == Separators.Newline:
+            current_line_breaks += 1
+        elif isinstance(token, str):
+            current_line_breaks += token.count("\n")
+        elif token == Separators.Statement:
+            total_line_breaks += current_line_breaks + 1
+            if (
+                current_line_breaks > style.BLOCK_SPACER
+                and last_statement_idx is not None
+            ):
+                to_add.add(last_statement_idx + 1)
+                to_add.add(index + 1)
+            last_statement_idx = index
+            current_line_breaks = 0
+        index += 1
+    return index, total_line_breaks + current_line_breaks
+
+
+def add_spacing(token_stream: Retype, style: Type[FormattingStyle]) -> None:
+    to_add: set[int] = set()
+    __inner_add_spacing(token_stream, 0, to_add, style)
+    for i in sorted(to_add, reverse=True):
+        token_stream.insert(i, Separators.Newline)
 
 
 def resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
@@ -523,12 +742,18 @@ def resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
                 token_stream[i] = " "
             elif token == Separators.Dot:
                 token_stream[i] = "."
-            elif token == Separators.Statement:
+            elif token in (Separators.Statement, Separators.Block):
                 token_stream[i] = style.STATEMENT_SEPARATOR
             elif token == Separators.Argument:
-                token_stream[i] = style.ARGUMENT_SEPARATOR
+                if token_stream[i + 1] == Separators.Newline:
+                    token_stream[i] = style.ARGUMENT_SEPARATOR.rstrip()
+                else:
+                    token_stream[i] = style.ARGUMENT_SEPARATOR
             elif token == Separators.Newline:
                 token_stream[i] = newline
+                i += 1
+                while i < len(token_stream) and token_stream[i] == Separators.Newline:
+                    token_stream[i] = ""
 
 
 def indent(token_stream: Retype, indentation_str: str) -> None:
@@ -552,7 +777,7 @@ def indent(token_stream: Retype, indentation_str: str) -> None:
             if indentation_dirty:
                 token_stream[i] = indentation_level * indentation_str + token
                 indentation_dirty = False
-            if "\n" in token:
+            if token.endswith("\n"):
                 indentation_dirty = True
     assert indentation_level == 0
 
@@ -571,6 +796,22 @@ def join_tokens(token_stream: Retype) -> str:
     return result
 
 
+def __remove_orphaned_tokens(token_stream: Retype) -> None:
+    for i in range(len(token_stream) - 1, -1, -1):
+        token = token_stream[i]
+        if token == "":
+            token_stream.pop(i)
+        elif token == Separators.Statement:
+            if not isinstance(token_stream[i - 1], str):
+                token_stream.pop(i)
+            elif token_stream[i : i + 3] == [
+                Separators.Statement,
+                Separators.Newline,
+                Separators.DeIndent,
+            ]:
+                token_stream.pop(i)
+
+
 def format(ast: ASTNode, style: Optional[Type[FormattingStyle]] = None) -> str:
     """
     Format an ast tree according to the style class.
@@ -584,7 +825,15 @@ def format(ast: ASTNode, style: Optional[Type[FormattingStyle]] = None) -> str:
     token_stream: Retype = formatter.visit(ast)
     if style.REMOVE_UNNECESSARY_CHARS:
         remove_separators(token_stream)
+    if style.LINE_WIDTH > 0:
+        indent_brackets(token_stream, style)
+    if style.BLOCK_SPACER > 0:
+        add_spacing(token_stream, style)
     token_stream[0:0] = [f"--{style.COMMENT_SEP}tumfl", Separators.Newline]
+    __remove_orphaned_tokens(token_stream)
     resolve_tokens(token_stream, style)
     indent(token_stream, style.INDENTATION)
-    return join_tokens(token_stream)
+    end = style.STATEMENT_SEPARATOR
+    if style.REMOVE_UNNECESSARY_CHARS:
+        end = ""
+    return join_tokens(token_stream).strip() + end

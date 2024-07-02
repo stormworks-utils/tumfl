@@ -124,17 +124,17 @@ class TestFormatter(unittest.TestCase):
             "1",
             Separators.Space,
             "then",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.true)[2:-1],
             "elseif",
             Separators.Space,
             "0",
             Separators.Space,
             "then",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.false.true)[2:-1],
             "else",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.false.false)[2:-1],
             "end",
         ]
@@ -146,7 +146,7 @@ class TestFormatter(unittest.TestCase):
             "1",
             Separators.Space,
             "then",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.true)[2:-1],
             "end",
         ]
@@ -181,7 +181,7 @@ class TestFormatter(unittest.TestCase):
         stmt = Parser("repeat a=b until 1")._parse_repeat()
         expected = [
             "repeat",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "until",
             Separators.Space,
@@ -242,7 +242,7 @@ class TestFormatter(unittest.TestCase):
             "i",
             Separators.Space,
             "do",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
@@ -282,20 +282,23 @@ class TestFormatter(unittest.TestCase):
     def test_FunctionDefinition(self):
         stmt = Parser("function a(b)a=b end")._parse_function()
         expected = [
+            Separators.Newline,
             "function",
             Separators.Space,
             "a",
             "(",
             "b",
             ")",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
-            Separators.Statement,
+            Separators.Block,
+            Separators.Newline,
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
         stmt = Parser("function a:b()a=b end")._parse_function()
         expected = [
+            Separators.Newline,
             "function",
             Separators.Space,
             "a",
@@ -303,10 +306,11 @@ class TestFormatter(unittest.TestCase):
             "b",
             "(",
             ")",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
-            Separators.Statement,
+            Separators.Block,
+            Separators.Newline,
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
 
@@ -322,7 +326,7 @@ class TestFormatter(unittest.TestCase):
             "b",
             Separators.Space,
             "do",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
@@ -374,7 +378,7 @@ class TestFormatter(unittest.TestCase):
             "2",
             Separators.Space,
             "do",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
@@ -394,7 +398,7 @@ class TestFormatter(unittest.TestCase):
             "3",
             Separators.Space,
             "do",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
         ]
@@ -427,7 +431,7 @@ class TestFormatter(unittest.TestCase):
             Separators.Argument,
             "b",
             ")",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(exp.body)[2:-1],
             "end",
         ]
@@ -441,6 +445,7 @@ class TestFormatter(unittest.TestCase):
     def test_LocalFunctionDefinition(self):
         stmt = Parser("local function abc(a)a=b end")._parse_local()
         expected = [
+            Separators.Newline,
             "local",
             Separators.Space,
             "function",
@@ -449,10 +454,11 @@ class TestFormatter(unittest.TestCase):
             "(",
             "a",
             ")",
-            Separators.Statement,
+            Separators.Block,
             *self.normal.visit(stmt.body)[2:-1],
             "end",
             Separators.Statement,
+            Separators.Newline,
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
 
@@ -578,7 +584,7 @@ class TestTokenFormatters(unittest.TestCase):
 
     def test_format(self):
         chunk = Parser("a=b if 1 then c=d else b=d end").parse_chunk()
-        expected = "-- tumfl\na = b\nif 1 then\n\tc = d\nelse\n\tb = d\nend"
+        expected = "-- tumfl\na = b\nif 1 then\n\tc = d\nelse\n\tb = d\nend\n"
         self.assertEqual(format(chunk), expected)
         expected = "--tumfl\na=b;if 1 then;c=d;else;b=d;end"
         self.assertEqual(format(chunk, MinifiedStyle), expected)
