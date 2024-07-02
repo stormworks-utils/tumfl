@@ -25,9 +25,9 @@ class ExplicitTableField(TableField):
 class NamedTableField(TableField):
     """Table field of the form `Name = expr`"""
 
-    def __init__(self, token: Token, name: Name, value: Expression):
+    def __init__(self, token: Token, field_name: Name, value: Expression):
         super().__init__(token, "NamedTableField")
-        self.field_name: Name = name
+        self.field_name: Name = field_name
         self.value: Expression = value
 
 
