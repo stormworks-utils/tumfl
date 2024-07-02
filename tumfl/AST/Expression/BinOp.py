@@ -115,6 +115,9 @@ class BinaryOperand(Enum):
             return ()
         assert False, f"Unknown Binary Operand {self}"
 
+    def __repr__(self) -> str:
+        return f"BinaryOperand.{self.name}"
+
 
 class BinOp(Expression):
     """Binary Operation, like a + b, 1 and 2 or 4 == b"""

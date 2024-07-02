@@ -13,6 +13,9 @@ class UnaryOperand(Enum):
     BIT_XOR = "~"
     NOT = "not"
 
+    def __repr__(self) -> str:
+        return f"UnaryOperand.{self.name}"
+
 
 class UnOp(Expression):
     """A unary operation, like -a, #c or not true"""
