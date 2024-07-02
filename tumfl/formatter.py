@@ -836,4 +836,5 @@ def format(ast: ASTNode, style: Optional[Type[FormattingStyle]] = None) -> str:
     end = style.STATEMENT_SEPARATOR
     if style.REMOVE_UNNECESSARY_CHARS:
         end = ""
-    return join_tokens(token_stream).strip() + end
+    formatted = join_tokens(token_stream)
+    return "\n".join(line.rstrip() for line in formatted.split("\n")).strip() + end
