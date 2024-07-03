@@ -6,6 +6,7 @@ from tumfl.formatter import (
     FormattingStyle,
     MinifiedStyle,
     Separators,
+    _string_ident,
     format,
     indent,
     remove_separators,
@@ -13,6 +14,10 @@ from tumfl.formatter import (
     sep_required,
 )
 from tumfl.parser import Parser
+
+
+class TestStyle(FormattingStyle):
+    LINE_WIDTH = 7
 
 
 class TestFormatter(unittest.TestCase):
@@ -588,3 +593,22 @@ class TestTokenFormatters(unittest.TestCase):
         self.assertEqual(format(chunk), expected)
         expected = "--tumfl\na=b;if 1 then;c=d;else;b=d;end"
         self.assertEqual(format(chunk, MinifiedStyle), expected)
+
+    def test_string_ident(self):
+        self.assertEqual(
+            _string_ident("'abc def'", 0, TestStyle),
+            ["'abc \\z", Separators.Newline, "def'"],
+        )
+        self.assertEqual(
+            _string_ident("'ab def'", 0, TestStyle),
+            ["'ab \\z", Separators.Newline, "def'"],
+        )
+        self.assertEqual(_string_ident("'          '", 0, TestStyle), ["'          '"])
+        self.assertEqual(
+            _string_ident("'      abc'", 0, TestStyle),
+            ["'      \\z", Separators.Newline, "abc'"],
+        )
+        self.assertEqual(
+            _string_ident("'abcdef'", 0, TestStyle),
+            ["'abcd\\z", Separators.Newline, "ef'"],
+        )

@@ -573,12 +573,15 @@ def __get_newline_pos(input_string: str, max_pos: int) -> int:
         if is_allowed and is_word_break:
             return current_pos
         current_pos -= 1
+    current_pos = max_pos
     while current_pos < len(input_string):
-        ...
-    return max_pos
+        if not input_string[current_pos].isspace():
+            return current_pos
+        current_pos += 1
+    return len(input_string)
 
 
-def __string_ident(
+def _string_ident(
     input_string: str, indentation: int, style: Type[FormattingStyle]
 ) -> Retype:
     start: str = input_string[0]
@@ -591,6 +594,8 @@ def __string_ident(
     result: Retype = []
     while input_string:
         pos = __get_newline_pos(input_string, style.LINE_WIDTH - raw_indentation)
+        if pos >= len(input_string) - 2:
+            pos = len(input_string)
         result.append(input_string[:pos] + "\\z")
         result.append(Separators.Newline)
         input_string = input_string[pos:]
@@ -630,9 +635,7 @@ def __inner_indent(
         elif isinstance(current_char, str) and (
             current_char.startswith('"') or current_char.startswith("'")
         ):
-            current_component[0:0] = __string_ident(
-                current_char, indentation + 1, style
-            )
+            current_component[0:0] = _string_ident(current_char, indentation + 1, style)
         else:
             current_component.insert(0, current_char)
         index -= 1
@@ -681,7 +684,7 @@ def indent_brackets(token_stream: Retype, style: Type[FormattingStyle]) -> None:
         elif isinstance(token, str) and (
             token.startswith('"') or token.startswith("'")
         ):
-            token_stream[index : index + 1] = __string_ident(token, indentation, style)
+            token_stream[index : index + 1] = _string_ident(token, indentation, style)
         index -= 1
 
 
