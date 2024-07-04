@@ -18,12 +18,14 @@ from tumfl.parser import Parser
 
 class TestStyle(FormattingStyle):
     LINE_WIDTH = 7
+    KEEP_SEMICOLON = True
 
 
 class TestFormatter(unittest.TestCase):
     def setUp(self) -> None:
         self.normal: Formatter = Formatter(FormattingStyle)
         self.minified: Formatter = Formatter(MinifiedStyle)
+        self.test: Formatter = Formatter(TestStyle)
 
     def test_format_comment(self):
         expected = ["-- comment", Separators.Newline]
@@ -196,8 +198,8 @@ class TestFormatter(unittest.TestCase):
 
     def test_Semicolon(self):
         stmt = Parser(";")._parse_statement()
-        expected = [";"]
-        self.assertEqual(self.normal.visit(stmt), expected)
+        self.assertEqual(self.normal.visit(stmt), [])
+        self.assertEqual(self.test.visit(stmt), [";"])
 
     def test_String(self):
         parser = Parser(
