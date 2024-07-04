@@ -39,6 +39,8 @@ class FormattingStyle:
     LINE_WIDTH: int = 120
     # Number of lines in a block to add spacers before and after the block. Use 0 to disable
     BLOCK_SPACER: int = 5
+    # Keep semicolons
+    KEEP_SEMICOLON: bool = False
 
 
 class MinifiedStyle(FormattingStyle):
@@ -220,7 +222,7 @@ class Formatter(BasicWalker[Retype]):
         ]
 
     def visit_Semicolon(self, _node: Semicolon) -> Retype:
-        return [";"]
+        return [";"] if self.s.KEEP_SEMICOLON else []
 
     def visit_String(self, node: String) -> Retype:
         escaped: str = ""
