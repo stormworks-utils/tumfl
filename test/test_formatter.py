@@ -612,3 +612,7 @@ class TestTokenFormatters(unittest.TestCase):
             _string_ident("'abcdef'", 0, TestStyle),
             ["'abcd\\z", Separators.Newline, "ef'"],
         )
+
+    def test_closure(self):
+        chunk = Parser("(function()return 1 end)()").parse_chunk()
+        self.assertEqual(format(chunk), "-- tumfl\n(function ()\n\treturn 1\nend)()\n")
