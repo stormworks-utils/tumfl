@@ -3,7 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Union
 
-from .AST import ASTNode, Chunk, FunctionCall, Name, Semicolon, String, ExpFunctionDefinition, ExpFunctionCall
+from .AST import (
+    ASTNode,
+    Chunk,
+    ExpFunctionCall,
+    ExpFunctionDefinition,
+    FunctionCall,
+    Name,
+    Semicolon,
+    String,
+)
 from .basic_walker import NoneWalker
 from .error import InvalidDependencyError
 from .parser import parse
@@ -54,7 +63,9 @@ class ResolveDependencies(NoneWalker):
         self.found[path] = None
         return _parse_file(path)
 
-    def __get_ast(self, node: Union[FunctionCall, ExpFunctionCall], deduplicate: bool = True) -> Optional[Chunk | Semicolon]:
+    def __get_ast(
+        self, node: Union[FunctionCall, ExpFunctionCall], deduplicate: bool = True
+    ) -> Optional[Chunk | Semicolon]:
         if isinstance(node.function, Name) and node.function.variable_name == "require":
             if len(node.arguments) == 1 and isinstance(
                 name := node.arguments[0], String
@@ -69,11 +80,10 @@ class ResolveDependencies(NoneWalker):
                     ast = Semicolon(node.token)
                     ast.parent(node.parent_class, node.file_name)
                 return ast
-            else:
-                raise InvalidDependencyError(
-                    f"Wrong require() arguments. Expected single string, got {node.arguments}",
-                    node.token,
-                )
+            raise InvalidDependencyError(
+                f"Wrong require() arguments. Expected single string, got {node.arguments}",
+                node.token,
+            )
         return None
 
     def visit_FunctionCall(self, node: FunctionCall) -> None:
