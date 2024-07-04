@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
-from .AST import ASTNode, Chunk, FunctionCall, Name, Semicolon, String
+from .AST import ASTNode, Chunk, FunctionCall, Name, Semicolon, String, ExpFunctionDefinition, ExpFunctionCall
 from .basic_walker import NoneWalker
 from .error import InvalidDependencyError
 from .parser import parse
@@ -42,19 +42,19 @@ class ResolveDependencies(NoneWalker):
         return None
 
     def _parse_block_dependency(
-        self, name: str, start_path: Path, token: Token
+        self, name: str, start_path: Path, token: Token, deduplicate: bool = True
     ) -> Optional[Chunk]:
         path: Optional[Path] = self._find_file_in_path(name, start_path)
         if not path:
             raise InvalidDependencyError(
                 f"Could not find dependency with name {name}", token
             )
-        if path in self.found:
+        if deduplicate and path in self.found:
             return None
         self.found[path] = None
         return _parse_file(path)
 
-    def visit_FunctionCall(self, node: FunctionCall) -> None:
+    def __get_ast(self, node: Union[FunctionCall, ExpFunctionCall], deduplicate: bool = True) -> Optional[Chunk | Semicolon]:
         if isinstance(node.function, Name) and node.function.variable_name == "require":
             if len(node.arguments) == 1 and isinstance(
                 name := node.arguments[0], String
@@ -62,21 +62,42 @@ class ResolveDependencies(NoneWalker):
                 assert isinstance(name, String)
                 assert node.file_name
                 ast: Optional[Chunk | Semicolon] = self._parse_block_dependency(
-                    name.value, node.file_name.parent, node.token
+                    name.value, node.file_name.parent, node.token, deduplicate
                 )
+                assert node.parent_class
                 if not ast:
                     ast = Semicolon(node.token)
-                assert node.parent_class
-                node.parent_class.replace_child(node, ast)
-                ast.parent_class = node.parent_class
-                self.visit(ast)
+                    ast.parent(node.parent_class, node.file_name)
+                return ast
             else:
                 raise InvalidDependencyError(
                     f"Wrong require() arguments. Expected single string, got {node.arguments}",
                     node.token,
                 )
+        return None
+
+    def visit_FunctionCall(self, node: FunctionCall) -> None:
+        if ast := self.__get_ast(node):
+            assert node.parent_class
+            node.parent_class.replace_child(node, ast)
+            ast.parent_class = node.parent_class
+            self.visit(ast)
         else:
             super().visit_FunctionCall(node)
+
+    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> None:
+        # if the body is expecting a return value, never deduplicate
+        if ast := self.__get_ast(node, deduplicate=False):
+            # since deduplication is off, ast will never be a Semicolon
+            assert isinstance(ast, Chunk)
+            function = ExpFunctionDefinition(node.token, [], ast)
+            node.function = function
+            ast.parent_class = function
+            ast.file_name = node.file_name
+            function.parent_class = node
+            self.visit(function)
+        else:
+            super().visit_ExpFunctionCall(node)
 
 
 def resolve_recursive(path: Path, search_path: list[Path]) -> ASTNode:
