@@ -231,6 +231,9 @@ class NoneWalker(BasicWalker[None]):
     def visit_LocalAssign(self, node: LocalAssign) -> None:
         for var in node.variable_names:
             self.visit(var.name)
+        if node.expressions:
+            for expr in node.expressions:
+                self.visit(expr)
 
     def visit_Semicolon(self, node: Semicolon) -> None:
         pass

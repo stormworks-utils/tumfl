@@ -28,9 +28,10 @@ def _parse_file(path: Path) -> Chunk:
 
 
 class ResolveDependencies(NoneWalker):
-    def __init__(self, search_path: list[Path]):
+    def __init__(self, search_path: list[Path], add_source_description: bool = False):
         self.search_path: list[Path] = search_path
         self.found: dict[Path, Optional[list[Name]]] = {}
+        self.add_source_description: bool = add_source_description
 
     @staticmethod
     def _str_to_name(name: str) -> Name:
@@ -79,6 +80,8 @@ class ResolveDependencies(NoneWalker):
                 if not ast:
                     ast = Semicolon(node.token)
                     ast.parent(node.parent_class, node.file_name)
+                if self.add_source_description:
+                    ast.comment.insert(0, f"Sourced from {name}")
                 return ast
             raise InvalidDependencyError(
                 f"Wrong require() arguments. Expected single string, got {node.arguments}",
@@ -110,8 +113,8 @@ class ResolveDependencies(NoneWalker):
             super().visit_ExpFunctionCall(node)
 
 
-def resolve_recursive(path: Path, search_path: list[Path]) -> ASTNode:
+def resolve_recursive(path: Path, search_path: list[Path], add_source_description: bool = False) -> ASTNode:
     ast = _parse_file(path)
-    resolver = ResolveDependencies(search_path)
+    resolver = ResolveDependencies(search_path, add_source_description)
     resolver.visit(ast)
     return ast
