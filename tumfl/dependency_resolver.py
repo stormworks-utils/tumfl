@@ -113,7 +113,9 @@ class ResolveDependencies(NoneWalker):
             super().visit_ExpFunctionCall(node)
 
 
-def resolve_recursive(path: Path, search_path: list[Path], add_source_description: bool = False) -> ASTNode:
+def resolve_recursive(
+    path: Path, search_path: list[Path], add_source_description: bool = False
+) -> ASTNode:
     ast = _parse_file(path)
     resolver = ResolveDependencies(search_path, add_source_description)
     resolver.visit(ast)
