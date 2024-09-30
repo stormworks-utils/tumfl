@@ -51,9 +51,9 @@ class ResolveDependencies(NoneWalker):
                     return current_path
         return None
 
-    def _parse_block_dependency(
+    def _get_block_dependency_path(
         self, name: str, start_path: Path, token: Token, deduplicate: bool = True
-    ) -> Optional[Chunk]:
+    ) -> Optional[Path]:
         path: Optional[Path] = self._find_file_in_path(name, start_path)
         if not path:
             raise InvalidDependencyError(
@@ -62,7 +62,7 @@ class ResolveDependencies(NoneWalker):
         if deduplicate and path in self.found:
             return None
         self.found[path] = None
-        return _parse_file(path)
+        return path
 
     def __get_ast(
         self, node: Union[FunctionCall, ExpFunctionCall], deduplicate: bool = True
@@ -73,15 +73,18 @@ class ResolveDependencies(NoneWalker):
             ):
                 assert isinstance(name, String)
                 assert node.file_name
-                ast: Optional[Chunk | Semicolon] = self._parse_block_dependency(
+                dependency_path: Optional[Path] = self._get_block_dependency_path(
                     name.value, node.file_name.parent, node.token, deduplicate
                 )
                 assert node.parent_class
-                if not ast:
+                ast: Union[Chunk | Semicolon]
+                if dependency_path:
+                    ast = _parse_file(dependency_path)
+                    if self.add_source_description:
+                        ast.comment.insert(0, f"Sourced from {dependency_path}")
+                else:
                     ast = Semicolon(node.token)
                     ast.parent(node.parent_class, node.file_name)
-                if self.add_source_description:
-                    ast.comment.insert(0, f"Sourced from {name}")
                 return ast
             raise InvalidDependencyError(
                 f"Wrong require() arguments. Expected single string, got {node.arguments}",
