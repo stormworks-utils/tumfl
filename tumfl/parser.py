@@ -482,6 +482,8 @@ class Parser:
                 first_var.method,
                 first_var.arguments,
             )
+        if isinstance(first_var, Name):
+            self._error("Unexpected lonely name", self.current_token)
         assert False, "unreachable line"
 
     def _parse_assignment(self, first_token: Token, first_var: Expression) -> Assign:

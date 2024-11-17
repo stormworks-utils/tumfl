@@ -878,6 +878,11 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, Token(TokenType.EOF, "eof", 0, 0))
 
+    def test_lonely_var(self):
+        parser = Parser("a")
+        with self.assertRaises(ParserError):
+            parser.parse_chunk()
+
 
 class EmptyTest(unittest.TestCase):
     def test_empty(self):
