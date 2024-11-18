@@ -285,7 +285,9 @@ class Formatter(BasicWalker[Retype]):
             and (
                 own_precedence > other_node.op.get_precedence()
                 or self.s.ADD_CLOSE_BRACKETS
-                and other_node.op in own_node.op.get_optional_brackets()
+                    and other_node.op in own_node.op.get_optional_brackets()
+                or other_node.op.non_commutative()
+                    and own_precedence == other_node.op.get_precedence()
             )
             or (care_unop or self.s.ADD_CLOSE_BRACKETS)
             and isinstance(other_node, UnOp)

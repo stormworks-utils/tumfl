@@ -506,6 +506,14 @@ class TestFormatter(unittest.TestCase):
         ]
         self.assertEqual(self.normal.visit(stmt), expected)
 
+    def test_non_commutative_brackets(self):
+        expr = Parser("1 - (2 - 3)")._parse_exp()
+        expected = ["1", Separators.Space, "-", Separators.Space, "(", "2", Separators.Space, "-", Separators.Space, "3", ")"]
+        self.assertEqual(self.normal.visit(expr), expected)
+        expr = Parser("1 * (2 / 3)")._parse_exp()
+        expected = ["1", Separators.Space, "*", Separators.Space, "(", "2", Separators.Space, "/", Separators.Space, "3", ")"]
+        self.assertEqual(self.normal.visit(expr), expected)
+
 
 class TestTokenFormatters(unittest.TestCase):
     def test_sep_required(self):

@@ -115,6 +115,11 @@ class BinaryOperand(Enum):
             return ()
         assert False, f"Unknown Binary Operand {self}"
 
+    def non_commutative(self) -> bool:
+        if self in (BinaryOperand.MINUS, BinaryOperand.DIVIDE, BinaryOperand.EXPONENT):
+            return True
+        return False
+
     def __repr__(self) -> str:
         return f"BinaryOperand.{self.name}"
 
