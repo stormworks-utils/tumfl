@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from tumfl.AST.Expression.Expression import Expression
 from tumfl.Token import Token
 
@@ -14,7 +16,7 @@ class Chunk(Block):
         self,
         token: Token,
         statements: list[Statement],
-        returns: list[Expression],
+        returns: Optional[list[Expression]],
     ):
         super().__init__(token, statements, returns)
         self.name = "Chunk"

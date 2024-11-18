@@ -484,6 +484,28 @@ class TestFormatter(unittest.TestCase):
         expected = ["a"]
         self.assertEqual(self.normal.visit(index), expected)
 
+    def test_return(self):
+        stmt = Parser("do return end")._parse_statement()
+        expected = [
+            "do",
+            Separators.Block,
+            Separators.Indent,
+            "return",
+            Separators.Statement,
+            Separators.DeIndent,
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+        stmt = Parser("do end")._parse_statement()
+        expected = [
+            "do",
+            Separators.Block,
+            Separators.Indent,
+            Separators.DeIndent,
+            "end",
+        ]
+        self.assertEqual(self.normal.visit(stmt), expected)
+
 
 class TestTokenFormatters(unittest.TestCase):
     def test_sep_required(self):

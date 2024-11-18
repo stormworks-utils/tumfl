@@ -23,7 +23,7 @@ class TestParser(unittest.TestCase):
 
     @staticmethod
     def get_chunk(*statements: Statement) -> Chunk:
-        return Chunk(statements[0].token, list(statements), [])
+        return Chunk(statements[0].token, list(statements), None)
 
     def test_simple_exp(self):
         parser = Parser("1+2")
@@ -382,7 +382,7 @@ class TestParser(unittest.TestCase):
         function_token = Token(TokenType.FUNCTION, "function", 0, 0)
         parser = Parser("()end")
         expected_tree = BaseFunctionDefinition(
-            function_token, [], Block(Token(TokenType.END, "end", 0, 0), [], [])
+            function_token, [], Block(Token(TokenType.END, "end", 0, 0), [], None)
         )
         repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
@@ -393,7 +393,7 @@ class TestParser(unittest.TestCase):
         expected_tree = BaseFunctionDefinition(
             function_token,
             [self.parse_name("a"), self.parse_name("b")],
-            Block(Token(TokenType.END, "end", 0, 0), [], []),
+            Block(Token(TokenType.END, "end", 0, 0), [], None),
         )
         repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
@@ -404,7 +404,7 @@ class TestParser(unittest.TestCase):
         expected_tree = BaseFunctionDefinition(
             function_token,
             [Vararg.from_token(Token(TokenType.ELLIPSIS, "...", 0, 0))],
-            Block(Token(TokenType.END, "end", 0, 0), [], []),
+            Block(Token(TokenType.END, "end", 0, 0), [], None),
         )
         repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
@@ -418,7 +418,7 @@ class TestParser(unittest.TestCase):
                 self.parse_name("a"),
                 Vararg.from_token(Token(TokenType.ELLIPSIS, "...", 0, 0)),
             ],
-            Block(Token(TokenType.END, "end", 0, 0), [], []),
+            Block(Token(TokenType.END, "end", 0, 0), [], None),
         )
         repr_test = repr(expected_tree)
         parser._add_hint("function", "function")
@@ -431,7 +431,7 @@ class TestParser(unittest.TestCase):
         expected_tree = ExpFunctionDefinition(
             Token(TokenType.FUNCTION, "function", 0, 0),
             [],
-            Block(Token(TokenType.END, "end", 0, 0), [], []),
+            Block(Token(TokenType.END, "end", 0, 0), [], None),
         )
         repr_test = repr(expected_tree)
         self.assertEqual(parser._parse_exp(), expected_tree)
@@ -587,7 +587,7 @@ class TestParser(unittest.TestCase):
                 Token(TokenType.LOCAL, "local", 0, 0),
                 self.parse_name("a"),
                 [],
-                Block(Token(TokenType.END, "end", 0, 0), [], []),
+                Block(Token(TokenType.END, "end", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -608,7 +608,7 @@ class TestParser(unittest.TestCase):
                 [self.parse_name("a")],
                 None,
                 [],
-                Block(Token(TokenType.END, "end", 0, 0), [], []),
+                Block(Token(TokenType.END, "end", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -622,7 +622,7 @@ class TestParser(unittest.TestCase):
                 [self.parse_name("a"), self.parse_name("b")],
                 self.parse_name("c"),
                 [],
-                Block(Token(TokenType.END, "end", 0, 0), [], []),
+                Block(Token(TokenType.END, "end", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -637,7 +637,7 @@ class TestParser(unittest.TestCase):
                 Token(TokenType.FOR, "for", 0, 0),
                 [self.parse_name("a")],
                 [self.parse_number("2")],
-                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+                Block(Token(TokenType.DO, "do", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -650,7 +650,7 @@ class TestParser(unittest.TestCase):
                 Token(TokenType.FOR, "for", 0, 0),
                 [self.parse_name("a"), self.parse_name("b")],
                 [self.parse_number("1"), self.parse_number("2")],
-                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+                Block(Token(TokenType.DO, "do", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -667,7 +667,7 @@ class TestParser(unittest.TestCase):
                 self.parse_number("1"),
                 self.parse_name("b"),
                 None,
-                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+                Block(Token(TokenType.DO, "do", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -682,7 +682,7 @@ class TestParser(unittest.TestCase):
                 self.parse_number("1"),
                 self.parse_name("b"),
                 self.parse_number("3"),
-                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+                Block(Token(TokenType.DO, "do", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -701,7 +701,7 @@ class TestParser(unittest.TestCase):
             If(
                 Token(TokenType.IF, "if", 0, 0),
                 self.parse_number("1"),
-                Block(Token(TokenType.THEN, "then", 0, 0), [], []),
+                Block(Token(TokenType.THEN, "then", 0, 0), [], None),
                 None,
             )
         )
@@ -714,8 +714,8 @@ class TestParser(unittest.TestCase):
             If(
                 Token(TokenType.IF, "if", 0, 0),
                 self.parse_number("1"),
-                Block(Token(TokenType.THEN, "then", 0, 0), [], []),
-                Block(Token(TokenType.ELSE, "else", 0, 0), [], []),
+                Block(Token(TokenType.THEN, "then", 0, 0), [], None),
+                Block(Token(TokenType.ELSE, "else", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -727,12 +727,12 @@ class TestParser(unittest.TestCase):
             If(
                 Token(TokenType.IF, "if", 0, 0),
                 self.parse_number("1"),
-                Block(Token(TokenType.THEN, "then", 0, 0), [], []),
+                Block(Token(TokenType.THEN, "then", 0, 0), [], None),
                 If(
                     Token(TokenType.ELSEIF, "elseif", 0, 0),
                     self.parse_number("2"),
-                    Block(Token(TokenType.ELSEIF, "elseif", 0, 0), [], []),
-                    Block(Token(TokenType.ELSE, "else", 0, 0), [], []),
+                    Block(Token(TokenType.ELSEIF, "elseif", 0, 0), [], None),
+                    Block(Token(TokenType.ELSE, "else", 0, 0), [], None),
                 ),
             )
         )
@@ -747,7 +747,7 @@ class TestParser(unittest.TestCase):
             Repeat(
                 Token(TokenType.REPEAT, "repeat", 0, 0),
                 self.parse_number("1"),
-                Block(Token(TokenType.REPEAT, "repeat", 0, 0), [], []),
+                Block(Token(TokenType.REPEAT, "repeat", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -761,7 +761,7 @@ class TestParser(unittest.TestCase):
             While(
                 Token(TokenType.WHILE, "while", 0, 0),
                 self.parse_number("1"),
-                Block(Token(TokenType.DO, "do", 0, 0), [], []),
+                Block(Token(TokenType.DO, "do", 0, 0), [], None),
             )
         )
         repr_test = repr(expected_tree)
@@ -799,7 +799,7 @@ class TestParser(unittest.TestCase):
 
     def test_parse_block(self):
         parser = Parser("do end")
-        expected_tree = self.get_chunk(Block(Token(TokenType.DO, "do", 0, 0), [], []))
+        expected_tree = self.get_chunk(Block(Token(TokenType.DO, "do", 0, 0), [], None))
         repr_test = repr(expected_tree)
         self.assertEqual(parser.parse_chunk(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
@@ -809,7 +809,7 @@ class TestParser(unittest.TestCase):
             Block(
                 Token(TokenType.DO, "do", 0, 0),
                 [Semicolon(Token(TokenType.SEMICOLON, ";", 0, 0))],
-                [],
+                None,
             )
         )
         repr_test = repr(expected_tree)
@@ -882,6 +882,14 @@ class TestParser(unittest.TestCase):
         parser = Parser("a")
         with self.assertRaises(ParserError):
             parser.parse_chunk()
+
+    def test_lonely_return(self):
+        parser = Parser("do return end")
+        expected_tree = self.get_chunk(Block(Token(TokenType.DO, "do", 0, 0), [], []))
+        self.assertEqual(parser.parse_chunk(), expected_tree)
+        parser = Parser("do end")
+        expected_tree = self.get_chunk(Block(Token(TokenType.DO, "do", 0, 0), [], None))
+        self.assertEqual(parser.parse_chunk(), expected_tree)
 
 
 class EmptyTest(unittest.TestCase):

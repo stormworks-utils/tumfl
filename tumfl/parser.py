@@ -99,11 +99,12 @@ class Parser:
 
         block: [DO | REPEAT | THEN | ELSE] {stat} [RETURN explist [SEMICOLON]] [END]
         """
-        block: Block = Block(block_token, [], [])
+        block: Block = Block(block_token, [], None)
         while self.current_token.type not in self._BLOCK_END_TYPES:
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:
             self._eat_token(TokenType.RETURN)
+            block.returns = []
             if (
                 self.current_token.type
                 not in (TokenType.SEMICOLON,) + self._BLOCK_END_TYPES

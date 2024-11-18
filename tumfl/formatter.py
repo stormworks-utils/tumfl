@@ -153,9 +153,12 @@ class Formatter(BasicWalker[Retype]):
                 for comment in statement.comment:
                     result += self._format_comment(comment)
             result += self.visit(statement) + [Separators.Statement]
-        if node.returns:
+        if node.returns is not None:
+            opt_space: tuple[Separators, ...] = (
+                (Separators.Space,) if node.returns else ()
+            )
             returns: Retype = self._format_args(node.returns)
-            result += ["return", Separators.Space, *returns, Separators.Statement]
+            result += ["return", *opt_space, *returns, Separators.Statement]
         result += [Separators.DeIndent, "end"]
         return result
 

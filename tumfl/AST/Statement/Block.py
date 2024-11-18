@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from tumfl.AST.Expression.Expression import Expression
 from tumfl.Token import Token
 
@@ -13,8 +15,8 @@ class Block(Statement):
         self,
         token: Token,
         statements: list[Statement],
-        returns: list[Expression],
+        returns: Optional[list[Expression]],
     ):
         super().__init__(token, "Block")
         self.statements: list[Statement] = statements
-        self.returns: list[Expression] = returns
+        self.returns: Optional[list[Expression]] = returns
