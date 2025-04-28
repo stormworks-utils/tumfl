@@ -2,8 +2,57 @@
 
 [![codecov](https://codecov.io/github/stormworks-utils/tumfl/branch/main/graph/badge.svg?token=X5TIVNJSZ7)](https://codecov.io/github/stormworks-utils/tumfl)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
- 
+
 This package contains the best minimizer you'll find on the market, or so I hope.
+
+# Executable
+
+Compile a source file into a destination file, resolving all requires. Optionally recompiles every time the source files
+change (using `-f`). Optionally replaces placeholders (using `-c`).
+
+## Placeholders
+
+Using a lua config file like
+```lua
+parameter = "value"
+numbered_parameter = 3.14
+```
+it can replace placeholders like
+```lua
+foo("$$parameter")
+bar = "$$numbered_parameter"
+```
+with
+```lua
+foo("value")
+bar = 3.14
+```
+
+The prefix is configurable via `--config-prefix`
+
+
+```
+usage: tumfl [-h] [-d DESTINATION] [-v] [-f] [-c CONFIG_FILE] [--config-prefix CONFIG_PREFIX] source_file
+
+Compile lua files
+
+positional arguments:
+  source_file           Source file to compile
+
+options:
+  -h, --help            show this help message and exit
+  -d DESTINATION, --destination DESTINATION
+                        Destination file
+  -v, --verbose         Be verbose
+  -f, --follow          Follow file changes
+  -c CONFIG_FILE, --config-file CONFIG_FILE
+                        Replace placeholders using config file. Config file is a normal lua file, with top level assignments of
+                        `name = value`, not limited to strings. To use an replacement, just use a string int the target file like
+                        `"$$name"` (if `$$` is your prefix, and `name` the name to look up).
+  --config-prefix CONFIG_PREFIX
+                        Prefix for names to be replaced by config values (default: $$)
+```
+
 # Current status
 
 ## Parser
