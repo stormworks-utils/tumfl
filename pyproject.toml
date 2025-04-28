@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tumfl"
-version = "0.2.2"
+version = "0.2.3"
 description = "The Ultimate Minimizer For Lua: minimize your lua scripts"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -33,3 +33,6 @@ repository = "https://github.com/stormworks-utils/tumfl"
 
 [tool.setuptools]
 packages = ["tumfl", "tumfl.AST", "tumfl.AST.Expression", "tumfl.AST.Statement"]
+
+[project.scripts]
+name = "tumfl.__main__:main"

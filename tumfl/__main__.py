@@ -13,11 +13,11 @@ from watchdog.events import (
 )
 from watchdog.observers import Observer
 
-from . import format, parse
-from .AST import Assign, ASTNode, Name, String
-from .basic_walker import NoneWalker
-from .dependency_resolver import resolve_recursive
-from .error import TumflError
+from tumfl import format, parse
+from tumfl.AST import Assign, ASTNode, Name, String
+from tumfl.basic_walker import NoneWalker
+from tumfl.dependency_resolver import resolve_recursive
+from tumfl.error import TumflError
 
 
 class ReplaceWalker(NoneWalker):
