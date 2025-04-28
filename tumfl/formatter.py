@@ -60,14 +60,14 @@ class MinifiedStyle(FormattingStyle):
 
 
 class Separators(Enum):
-    Statement: str = "stmt"
-    Newline: str = "newline"
-    Argument: str = "arg"
-    Space: str = " "
-    Dot: str = "."
-    Indent: str = "indent"
-    DeIndent: str = "de-indent"
-    Block: str = "block"
+    Statement = "stmt"
+    Newline = "newline"
+    Argument = "arg"
+    Space = " "
+    Dot = "."
+    Indent = "indent"
+    DeIndent = "de-indent"
+    Block = "block"
 
     def join(self, to_join: Iterator[Retype]) -> Retype:
         join_list: list[Retype] = list(to_join)
