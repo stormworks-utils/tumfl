@@ -24,6 +24,7 @@ disable=
     unused-wildcard-import,
     import-outside-toplevel,
     too-many-positional-arguments,
+    cyclic-import,
 
 [DESIGN]
 
