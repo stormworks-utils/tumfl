@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
 from tumfl.AST.Expression.Name import Name
 from tumfl.AST.Expression.Vararg import Vararg
@@ -16,12 +18,12 @@ class LocalFunctionDefinition(Statement):
         self,
         token: Token,
         function_name: Name,
-        parameters: list[Name | Vararg],
+        parameters: Sequence[Name | Vararg],
         body: Block,
     ):
         super().__init__(token, "LocalFunctionDefinition")
         self.function_name: Name = function_name
-        self.parameters: list[Name | Vararg] = parameters
+        self.parameters: list[Name | Vararg] = list(parameters)
         self.body: Block = body
 
     @staticmethod

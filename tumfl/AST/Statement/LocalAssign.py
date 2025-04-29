@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from pathlib import Path
 from typing import Any, Optional
 
+from tumfl.AST.ASTNode import ASTNode
 from tumfl.AST.Expression.Expression import Expression
 from tumfl.AST.Expression.Name import Name
 from tumfl.Token import Token
@@ -34,9 +37,25 @@ class LocalAssign(Statement):
     def __init__(
         self,
         token: Token,
-        variable_names: list[AttributedName],
-        expressions: Optional[list[Expression]],
+        variable_names: Sequence[AttributedName],
+        expressions: Optional[Sequence[Expression]],
     ):
         super().__init__(token, "LocalAssign")
-        self.variable_names: list[AttributedName] = variable_names
-        self.expressions: Optional[list[Expression]] = expressions
+        self.variable_names: list[AttributedName] = list(variable_names)
+        self.expressions: Optional[list[Expression]] = (
+            list(expressions) if expressions is not None else None
+        )
+
+    def parent(
+        self, parent: Optional[ASTNode], file_name: Optional[Path] = None
+    ) -> None:
+        # due to attributed names not being AST nodes, the auto implementation does not work
+        self.parent_class = parent
+        for name in self.variable_names:
+            name.name.parent(self)
+            if name.attribute:
+                name.attribute.parent(self)
+
+        if self.expressions:
+            for expr in self.expressions:
+                expr.parent(self)

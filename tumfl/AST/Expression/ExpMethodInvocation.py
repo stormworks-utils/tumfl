@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from tumfl.Token import Token
 
 from .Expression import Expression
@@ -14,9 +16,9 @@ class ExpMethodInvocation(Expression):
         token: Token,
         function: Expression,
         method: Name,
-        arguments: list[Expression],
+        arguments: Sequence[Expression],
     ):
         super().__init__(token, "ExpMethodInvocation")
         self.function: Expression = function
         self.method: Name = method
-        self.arguments: list[Expression] = arguments
+        self.arguments: list[Expression] = list(arguments)

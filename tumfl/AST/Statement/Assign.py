@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from tumfl.AST.Expression.Expression import Expression
 from tumfl.Token import Token
 
@@ -12,9 +14,9 @@ class Assign(Statement):
     def __init__(
         self,
         token: Token,
-        targets: list[Expression],
-        expressions: list[Expression],
+        targets: Sequence[Expression],
+        expressions: Sequence[Expression],
     ):
         super().__init__(token, "Assign")
-        self.targets: list[Expression] = targets
-        self.expressions: list[Expression] = expressions
+        self.targets: list[Expression] = list(targets)
+        self.expressions: list[Expression] = list(expressions)

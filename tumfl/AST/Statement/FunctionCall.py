@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from tumfl.AST.Expression import Expression
+from typing import Sequence
+
+from tumfl.AST.Expression.Expression import Expression
 from tumfl.Token import Token
 
 from .Statement import Statement
@@ -13,8 +15,8 @@ class FunctionCall(Statement):
         self,
         token: Token,
         function: Expression,
-        arguments: list[Expression],
+        arguments: Sequence[Expression],
     ):
         super().__init__(token, "FunctionCall")
         self.function: Expression = function
-        self.arguments: list[Expression] = arguments
+        self.arguments: list[Expression] = list(arguments)

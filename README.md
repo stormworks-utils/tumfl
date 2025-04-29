@@ -16,16 +16,19 @@ Using a lua config file like
 ```lua
 parameter = "value"
 numbered_parameter = 3.14
+table_parameter = {foo = 1, "bar"}
 ```
 it can replace placeholders like
 ```lua
 foo("$$parameter")
 bar = "$$numbered_parameter"
+baz = "$$table_parameter"
 ```
-with
+by compiling using `tumfl source.lua -c config.lua` with
 ```lua
 foo("value")
 bar = 3.14
+baz = {foo = 1, "bar"}
 ```
 
 The prefix is configurable via `--config-prefix`

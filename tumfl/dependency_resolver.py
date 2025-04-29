@@ -5,33 +5,45 @@ from typing import Optional, Union
 
 from .AST import (
     ASTNode,
+    Block,
     Chunk,
     ExpFunctionCall,
     ExpFunctionDefinition,
     FunctionCall,
     Name,
+    NumberedTableField,
     Semicolon,
     String,
+    Table,
 )
 from .basic_walker import NoneWalker
+from .config import Config
 from .error import InvalidDependencyError
 from .parser import parse
 from .Token import Token, TokenType
 
 
-def _parse_file(path: Path) -> Chunk:
+def _parse_file(path: Path, config: Optional[Config]) -> Chunk:
     with path.open() as f:
         chunk: str = f.read()
     ast = parse(chunk)
     ast.parent(None, path)
+    if config:
+        config.visit(ast)
     return ast
 
 
 class ResolveDependencies(NoneWalker):
-    def __init__(self, search_path: list[Path], add_source_description: bool = False):
+    def __init__(
+        self,
+        search_path: list[Path],
+        add_source_description: bool = False,
+        config: Optional[Config] = None,
+    ):
         self.search_path: list[Path] = search_path
         self.found: dict[Path, Optional[list[Name]]] = {}
         self.add_source_description: bool = add_source_description
+        self.config: Optional[Config] = config
 
     @staticmethod
     def _str_to_name(name: str) -> Name:
@@ -41,8 +53,8 @@ class ResolveDependencies(NoneWalker):
         parts: list[str] = name.split(".")
         if not parts[0]:
             return None
-        filename: Path = Path(parts.pop(0))
-        for file in parts:
+        filename: Path = Path(parts[0])
+        for file in parts[1:]:
             filename /= file
         for path in (start_path, *self.search_path):
             for suffix in ("", ".tl", ".lua"):
@@ -64,40 +76,73 @@ class ResolveDependencies(NoneWalker):
         self.found[path] = None
         return path
 
+    def __find_and_parse(
+        self, name: str, node: ASTNode, deduplicate: bool, results: list[Chunk]
+    ) -> None:
+        assert node.file_name
+        name = name.replace("/", ".")
+        dependency_path: Optional[Path] = self._get_block_dependency_path(
+            name, node.file_name.parent, node.token, deduplicate
+        )
+        if dependency_path:
+            ast: Chunk = _parse_file(dependency_path, self.config)
+            if self.add_source_description:
+                ast.comment.insert(0, f"Sourced from {dependency_path}")
+            results.append(ast)
+
+    def __get_table_dependencies(
+        self, node: Table, results: list[Chunk], deduplicate: bool
+    ) -> None:
+        for item in node.fields:
+            if isinstance(item, NumberedTableField):
+                if isinstance(item.value, String):
+                    self.__find_and_parse(item.value.value, node, deduplicate, results)
+                else:
+                    raise InvalidDependencyError(
+                        f"Wrong require() arguments. Table can only contain strings, got {item}",
+                        node.token,
+                    )
+            else:
+                raise InvalidDependencyError(
+                    f"Wrong require() arguments. Can only use strings with no explicit index, got {item}",
+                    node.token,
+                )
+
     def __get_ast(
         self, node: Union[FunctionCall, ExpFunctionCall], deduplicate: bool = True
-    ) -> Optional[Chunk | Semicolon]:
+    ) -> Optional[Chunk | Semicolon | Block]:
         if isinstance(node.function, Name) and node.function.variable_name == "require":
-            if len(node.arguments) == 1 and isinstance(
-                name := node.arguments[0], String
-            ):
-                assert isinstance(name, String)
-                assert node.file_name
-                dependency_path: Optional[Path] = self._get_block_dependency_path(
-                    name.value, node.file_name.parent, node.token, deduplicate
-                )
-                assert node.parent_class
-                ast: Union[Chunk | Semicolon]
-                if dependency_path:
-                    ast = _parse_file(dependency_path)
-                    if self.add_source_description:
-                        ast.comment.insert(0, f"Sourced from {dependency_path}")
+            results: list[Chunk] = []
+            for arg in node.arguments:
+                if isinstance(arg, String):
+                    self.__find_and_parse(arg.value, node, deduplicate, results)
+                elif isinstance(arg, Table):
+                    self.__get_table_dependencies(arg, results, deduplicate)
                 else:
-                    ast = Semicolon(node.token)
-                    ast.parent(node.parent_class, node.file_name)
-                return ast
-            raise InvalidDependencyError(
-                f"Wrong require() arguments. Expected single string, got {node.arguments}",
-                node.token,
-            )
+                    raise InvalidDependencyError(
+                        f"Wrong require() arguments. Expected string or table, got {arg}",
+                        node.token,
+                    )
+            ast: Union[Chunk | Semicolon | Block]
+            if not results:
+                ast = Semicolon(node.token)
+                ast.parent(node.parent_class, node.file_name)
+            elif len(results) == 1:
+                ast = results[0]
+            else:
+                ast = Block(node.token, results, None)
+            return ast
         return None
 
     def visit_FunctionCall(self, node: FunctionCall) -> None:
         if ast := self.__get_ast(node):
-            assert node.parent_class
-            node.parent_class.replace_child(node, ast)
-            ast.parent_class = node.parent_class
-            self.visit(ast)
+            if isinstance(ast, Semicolon):
+                assert node.parent_class
+                node.parent_class.remove_child(node)
+            else:
+                ast.parent_class = node.parent_class
+                node.replace(ast)
+                self.visit(ast)
         else:
             super().visit_FunctionCall(node)
 
@@ -117,9 +162,12 @@ class ResolveDependencies(NoneWalker):
 
 
 def resolve_recursive(
-    path: Path, search_path: list[Path], add_source_description: bool = False
+    path: Path,
+    search_path: list[Path],
+    add_source_description: bool = False,
+    config: Optional[Config] = None,
 ) -> ASTNode:
-    ast = _parse_file(path)
+    ast = _parse_file(path, config)
     resolver = ResolveDependencies(search_path, add_source_description)
     resolver.visit(ast)
     return ast

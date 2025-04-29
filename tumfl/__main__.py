@@ -8,33 +8,17 @@ from typing import Optional
 from watchdog.events import EVENT_TYPE_CLOSED, FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from tumfl import format, parse
-from tumfl.AST import Assign, ASTNode, Name, String
-from tumfl.basic_walker import NoneWalker
-from tumfl.dependency_resolver import resolve_recursive
-from tumfl.error import TumflError
-
 try:
     from watchdog.events import EVENT_TYPE_OPENED
 except ImportError:
     EVENT_TYPE_OPENED = "opened"
 
-
-class ReplaceWalker(NoneWalker):
-    def __init__(self, replacements: dict[str, ASTNode], prefix: str = "$$"):
-        super().__init__()
-        self.replacements: dict[str, ASTNode] = replacements
-        self.prefix: str = prefix
-
-    def visit_String(self, node: String) -> None:
-        if node.value.startswith(self.prefix):
-            if node.value[len(self.prefix) :] in self.replacements:
-                assert node.parent_class
-                node.parent_class.replace_child(
-                    node, self.replacements[node.value[len(self.prefix) :]]
-                )
-            else:
-                warning(f"Found placeholder with no assigned value: {node.value}")
+from tumfl import format
+from tumfl.AST import Assign, ASTNode, Name
+from tumfl.basic_walker import NoneWalker
+from tumfl.config import Config
+from tumfl.dependency_resolver import resolve_recursive
+from tumfl.error import TumflError
 
 
 class ParameterGetter(NoneWalker):
@@ -55,20 +39,19 @@ class ParameterGetter(NoneWalker):
             warning(f"Ignoring config parameter {node}")
 
 
-def compile_file(filename: Path, replacer: ReplaceWalker) -> str:
+def compile_file(filename: Path, config: Config) -> str:
     source_directory: Path = filename.parent
     result: ASTNode = resolve_recursive(
-        filename, [source_directory], add_source_description=True
+        filename, [source_directory], add_source_description=True, config=config
     )
-    replacer.visit(result)
     return format(result)
 
 
-def run(source: Path, destination: Optional[Path], replacer: ReplaceWalker) -> None:
+def run(source: Path, destination: Optional[Path], config: Config) -> None:
     if not destination:
         destination = source.with_stem(source.stem + "_result")
     try:
-        compiled = compile_file(source, replacer)
+        compiled = compile_file(source, config)
     except RuntimeError:
         return
     except TumflError as e:
@@ -79,26 +62,24 @@ def run(source: Path, destination: Optional[Path], replacer: ReplaceWalker) -> N
 
 
 class EventHandler(FileSystemEventHandler):
-    def __init__(
-        self, source: Path, destination: Optional[Path], replacer: ReplaceWalker
-    ):
+    def __init__(self, source: Path, destination: Optional[Path], config: Config):
         self.source: Path = source
         self.destination: Optional[Path] = destination
-        self.replacer: ReplaceWalker = replacer
+        self.config: Config = config
 
     def execute(self) -> None:
         info("Files changed, recompiling")
-        run(self.source, self.destination, self.replacer)
+        run(self.source, self.destination, self.config)
 
     def on_any_event(self, event: FileSystemEvent) -> None:
         if event.event_type not in (EVENT_TYPE_CLOSED, EVENT_TYPE_OPENED):
             self.execute()
 
 
-def follow(source: Path, destination: Optional[Path], replacer: ReplaceWalker) -> None:
-    run(source, destination, replacer)
+def follow(source: Path, destination: Optional[Path], config: Config) -> None:
+    run(source, destination, config)
     observer = Observer()
-    event_handler = EventHandler(source, destination, replacer)
+    event_handler = EventHandler(source, destination, config)
     observer.schedule(event_handler, str(source.parent), recursive=True)
     observer.start()
     try:
@@ -110,8 +91,7 @@ def follow(source: Path, destination: Optional[Path], replacer: ReplaceWalker) -
 
 
 def parse_config(file: Path) -> dict[str, ASTNode]:
-    with file.open() as f:
-        chunk = parse(f.read())
+    chunk: ASTNode = resolve_recursive(file, [file.parent])
     getter = ParameterGetter()
     getter.visit(chunk)
     return getter.parameters
@@ -120,7 +100,7 @@ def parse_config(file: Path) -> dict[str, ASTNode]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compile lua files", prog="tumfl")
     parser.add_argument("source_file", type=Path, help="Source file to compile")
-    parser.add_argument("-d", "--destination", type=Path, help="Destination file")
+    parser.add_argument("-d", "--destination-file", type=Path, help="Destination file")
     parser.add_argument(
         "-v",
         "--verbose",
@@ -156,13 +136,13 @@ def main() -> None:
         datefmt="%Y-%m-%dT%H:%M:%S%z",
         level=loglevel,
     )
-    _replacer = ReplaceWalker({}, prefix=args.config_prefix)
+    config = Config({}, prefix=args.config_prefix)
     if args.config_file:
-        _replacer.replacements = parse_config(args.config_file)
+        config.replacements = parse_config(args.config_file)
     if args.follow:
-        follow(args.source_file, args.destination, _replacer)
+        follow(args.source_file, args.destination_file, config)
     else:
-        run(args.source_file, args.destination, _replacer)
+        run(args.source_file, args.destination_file, config)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from tumfl.AST.Expression.Expression import Expression
 from tumfl.AST.Expression.Name import Name
 from tumfl.Token import Token
@@ -14,11 +16,11 @@ class IterativeFor(Statement):
     def __init__(
         self,
         token: Token,
-        namelist: list[Name],
-        explist: list[Expression],
+        namelist: Sequence[Name],
+        explist: Sequence[Expression],
         body: Block,
     ):
         super().__init__(token, "IterativeFor")
-        self.namelist: list[Name] = namelist
-        self.explist: list[Expression] = explist
+        self.namelist: list[Name] = list(namelist)
+        self.explist: list[Expression] = list(explist)
         self.body: Block = body

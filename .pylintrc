@@ -22,6 +22,8 @@ disable=
     too-many-return-statements,
     wildcard-import,
     unused-wildcard-import,
+    import-outside-toplevel,
+    too-many-positional-arguments,
 
 [DESIGN]
 

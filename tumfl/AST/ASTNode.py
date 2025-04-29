@@ -4,6 +4,8 @@ from abc import ABC
 from pathlib import Path
 from typing import Any, Generator, Generic, Optional, TypeVar
 
+from typing_extensions import deprecated
+
 from tumfl.Token import Token
 from tumfl.utils import generic_str
 
@@ -42,7 +44,7 @@ class ASTNode(ABC, Generic[T]):
         )
 
     def parent(
-        self, parent: Optional[ASTNode], file_name: Optional[Path] = None
+        self, parent: Optional[ASTNode[T]], file_name: Optional[Path] = None
     ) -> None:
         self.parent_class = parent
         self.file_name = file_name
@@ -58,7 +60,31 @@ class ASTNode(ABC, Generic[T]):
                 for node in node:
                     node.parent(self, file_name)
 
-    def replace_child(self, to_replace: ASTNode, replacement: ASTNode) -> None:
+    def replace(self, replacement: ASTNode[T]) -> None:
+        """Replaces node in-place"""
+        self.__class__ = replacement.__class__
+        self.__dict__.clear()
+        self.__dict__.update(replacement.__dict__)
+
+    def remove_child(self, to_remove: ASTNode[T]) -> None:
+        """Removes a child (replacing it with Semicolon if necessary"""
+        for i in self.__dir():
+            node: Any = getattr(self, i)
+            if node is to_remove:
+                from tumfl.AST import Semicolon
+
+                replacement: Semicolon = Semicolon(to_remove.token)
+                replacement.parent(to_remove.parent_class, to_remove.file_name)
+                setattr(self, i, node)
+                return
+            if isinstance(node, list):
+                for j, element in enumerate(node):
+                    if element is to_remove:
+                        node.pop(j)
+                        return
+
+    @deprecated("Use ASTNode.replace")
+    def replace_child(self, to_replace: ASTNode[T], replacement: ASTNode[T]) -> None:
         for i in self.__dir():
             node: Any = getattr(self, i)
             if node is to_replace:

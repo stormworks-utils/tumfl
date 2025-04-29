@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from tumfl.AST.Expression import Expression
+from typing import Sequence
+
+from tumfl.AST.Expression.Expression import Expression
 from tumfl.AST.Expression.Name import Name
 from tumfl.Token import Token
 
@@ -15,9 +17,9 @@ class MethodInvocation(Statement):
         token: Token,
         function: Expression,
         method: Name,
-        arguments: list[Expression],
+        arguments: Sequence[Expression],
     ):
         super().__init__(token, "MethodInvocation")
         self.function: Expression = function
         self.method: Name = method
-        self.arguments: list[Expression] = arguments
+        self.arguments: list[Expression] = list(arguments)

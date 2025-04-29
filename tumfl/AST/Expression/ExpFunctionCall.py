@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from tumfl.Token import Token
 
 from .Expression import Expression
@@ -12,8 +14,8 @@ class ExpFunctionCall(Expression):
         self,
         token: Token,
         function: Expression,
-        arguments: list[Expression],
+        arguments: Sequence[Expression],
     ):
         super().__init__(token, "ExpFunctionCall")
         self.function: Expression = function
-        self.arguments: list[Expression] = arguments
+        self.arguments: list[Expression] = list(arguments)

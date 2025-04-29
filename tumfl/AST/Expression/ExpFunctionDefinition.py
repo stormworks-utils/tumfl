@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
 from tumfl.AST.Statement.Block import Block
 from tumfl.Token import Token
@@ -15,11 +17,11 @@ class ExpFunctionDefinition(Expression):
     def __init__(
         self,
         token: Token,
-        parameters: list[Name | Vararg],
+        parameters: Sequence[Name | Vararg],
         body: Block,
     ):
         super().__init__(token, "ExpFunctionDefinition")
-        self.parameters: list[Name | Vararg] = parameters
+        self.parameters: list[Name | Vararg] = list(parameters)
         self.body: Block = body
 
     @staticmethod

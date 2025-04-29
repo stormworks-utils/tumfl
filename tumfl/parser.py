@@ -91,6 +91,8 @@ class Parser:
         chunk: block
         """
         block: Block = self._parse_block(self.current_token)
+        # all token comments are already represented elsewhere, there is no need to duplicate them
+        block.token.comment = []
         return Chunk(block.token, block.statements, block.returns)
 
     def _parse_block(self, block_token: Token, expect_end: bool = False) -> Block:
