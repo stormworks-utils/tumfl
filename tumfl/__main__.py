@@ -5,12 +5,7 @@ from logging import error, info, warning
 from pathlib import Path
 from typing import Optional
 
-from watchdog.events import (
-    EVENT_TYPE_CLOSED,
-    EVENT_TYPE_OPENED,
-    FileSystemEvent,
-    FileSystemEventHandler,
-)
+from watchdog.events import EVENT_TYPE_CLOSED, FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from tumfl import format, parse
@@ -18,6 +13,11 @@ from tumfl.AST import Assign, ASTNode, Name, String
 from tumfl.basic_walker import NoneWalker
 from tumfl.dependency_resolver import resolve_recursive
 from tumfl.error import TumflError
+
+try:
+    from watchdog.events import EVENT_TYPE_OPENED
+except ImportError:
+    EVENT_TYPE_OPENED = "opened"
 
 
 class ReplaceWalker(NoneWalker):
@@ -74,7 +74,7 @@ def run(source: Path, destination: Optional[Path], replacer: ReplaceWalker) -> N
     except TumflError as e:
         error(e)
         return
-    with destination.open("W") as f:
+    with destination.open("w") as f:
         f.write(compiled)
 
 
@@ -156,7 +156,7 @@ def main() -> None:
         datefmt="%Y-%m-%dT%H:%M:%S%z",
         level=loglevel,
     )
-    _replacer = ReplaceWalker({}, prefix=args.conf_prefix)
+    _replacer = ReplaceWalker({}, prefix=args.config_prefix)
     if args.config_file:
         _replacer.replacements = parse_config(args.config_file)
     if args.follow:
