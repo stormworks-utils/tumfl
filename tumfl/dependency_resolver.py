@@ -168,6 +168,6 @@ def resolve_recursive(
     config: Optional[Config] = None,
 ) -> ASTNode:
     ast = _parse_file(path, config)
-    resolver = ResolveDependencies(search_path, add_source_description)
+    resolver = ResolveDependencies(search_path, add_source_description, config=config)
     resolver.visit(ast)
     return ast
