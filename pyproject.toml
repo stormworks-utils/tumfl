@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tumfl"
-version = "0.3.0"
+version = "0.3.1"
 description = "The Ultimate Minimizer For Lua: minimize your lua scripts"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["lua", "minimizer", "ast"]
-license = { text = "MIT License" }
+license = "MIT"
 authors = [{ name = "Fabian Wunsch" }]
 classifiers = [
     "Programming Language :: Python :: 3",
