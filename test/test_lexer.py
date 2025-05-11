@@ -9,7 +9,7 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (False, "1", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("123409204023492")
-        nmb: NumberTuple = (False, "123409204023492", None, None, None)
+        nmb = (False, "123409204023492", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_hex_int(self):
@@ -17,7 +17,7 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (True, "123", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0XaBc123")
-        nmb: NumberTuple = (True, "abc123", None, None, None)
+        nmb = (True, "abc123", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_simple_float(self):
@@ -25,7 +25,7 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (False, "0", "1", None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("123.456")
-        nmb: NumberTuple = (False, "123", "456", None, None)
+        nmb = (False, "123", "456", None, None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_hex_simple_float(self):
@@ -33,7 +33,7 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (True, "0", "a", None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0X5.Ca")
-        nmb: NumberTuple = (True, "5", "ca", None, None)
+        nmb = (True, "5", "ca", None, None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_float_dangling_dot(self):
@@ -41,7 +41,7 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (False, None, "3", None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0.")
-        nmb: NumberTuple = (False, "0", None, None, None)
+        nmb = (False, "0", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_hex_float_dangling_dot(self):
@@ -54,13 +54,13 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (False, "0", "2", "+1", None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0.5e")
-        nmb: NumberTuple = (False, "0", "5", None, None)
+        nmb = (False, "0", "5", None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("34E1")
-        nmb: NumberTuple = (False, "34", None, "1", None)
+        nmb = (False, "34", None, "1", None)
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0E+1")
-        nmb: NumberTuple = (False, "0", None, "+1", None)
+        nmb = (False, "0", None, "+1", None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_hex_float_offset(self):
@@ -68,19 +68,19 @@ class TestNumberLexing(unittest.TestCase):
         nmb: NumberTuple = (True, "2", "ef", None, "3")
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0x.4p-2")
-        nmb: NumberTuple = (True, None, "4", None, "-2")
+        nmb = (True, None, "4", None, "-2")
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0X1.921FB54442D18P+1")
-        nmb: NumberTuple = (True, "1", "921fb54442d18", None, "+1")
+        nmb = (True, "1", "921fb54442d18", None, "+1")
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0x.0p-3")
-        nmb: NumberTuple = (True, None, "0", None, "-3")
+        nmb = (True, None, "0", None, "-3")
         self.assertEqual(lex.get_number(), nmb)
         lex = Lexer("0xE+1")
-        nmb: NumberTuple = (True, "e", None, None, None)
+        nmb = (True, "e", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
         lex.advance()
-        nmb: NumberTuple = (False, "1", None, None, None)
+        nmb = (False, "1", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
 
     def test_boundaries(self):
@@ -89,19 +89,19 @@ class TestNumberLexing(unittest.TestCase):
         self.assertEqual(lex.get_number(), nmb)
         self.assertEqual(lex.current_char, "a")
         lex = Lexer("0xag")
-        nmb: NumberTuple = (True, "a", None, None, None)
+        nmb = (True, "a", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
         self.assertEqual(lex.current_char, "g")
         lex = Lexer("0.3p2")
-        nmb: NumberTuple = (False, "0", "3", None, None)
+        nmb = (False, "0", "3", None, None)
         self.assertEqual(lex.get_number(), nmb)
         self.assertEqual(lex.current_char, "p")
         lex = Lexer(".3e-5c")
-        nmb: NumberTuple = (False, None, "3", "-5", None)
+        nmb = (False, None, "3", "-5", None)
         self.assertEqual(lex.get_number(), nmb)
         self.assertEqual(lex.current_char, "c")
         lex = Lexer("1xb")
-        nmb: NumberTuple = (False, "1", None, None, None)
+        nmb = (False, "1", None, None, None)
         self.assertEqual(lex.get_number(), nmb)
         self.assertEqual(lex.current_char, "x")
 
@@ -248,10 +248,10 @@ class TestNextToken(unittest.TestCase):
         self.assertEqual(lex.get_next_token(), Token(TokenType.ASSIGN, "=", 1, 12))
         self.assertEqual(lex.get_next_token(), Token(TokenType.NAME, "a", 1, 13))
         self.assertEqual(lex.get_next_token(), Token(TokenType.PLUS, "+", 1, 14))
-        nmb: NumberTuple = (False, "4", None, None, None)
+        nmb = (False, "4", None, None, None)
         self.assertEqual(lex.get_next_token(), Token(TokenType.NUMBER, nmb, 1, 15))
         self.assertEqual(lex.get_next_token(), Token(TokenType.LESS_THAN, "<", 1, 16))
-        nmb: NumberTuple = (False, "55", None, None, None)
+        nmb = (False, "55", None, None, None)
         self.assertEqual(lex.get_next_token(), Token(TokenType.NUMBER, nmb, 1, 17))
         self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
         self.assertEqual(lex.get_next_token(), Token(TokenType.EOF, "eof", 1, 19))
@@ -289,8 +289,8 @@ class TestComment(unittest.TestCase):
         self.assertEqual(tok.comment, ["The following line is special"])
         self.assertEqual(tok.line, 2)
         self.assertEqual(tok.column, 1)
-        lex: Lexer = Lexer("--some comment\n--another comment\nabc")
-        tok: Token = lex.get_next_token()
+        lex = Lexer("--some comment\n--another comment\nabc")
+        tok = lex.get_next_token()
         self.assertEqual(tok.comment, ["some comment", "another comment"])
 
 

@@ -1,6 +1,6 @@
 import unittest
 
-from tumfl.AST import Block, ExpFunctionDefinition, If
+from tumfl.AST import Block, ExpFunctionDefinition, If, LocalFunctionDefinition
 from tumfl.formatter import (
     Formatter,
     FormattingStyle,
@@ -52,16 +52,16 @@ class TestFormatter(unittest.TestCase):
         expression = parser._parse_exp()  # 1
         expected = ["(", *self.normal.visit(expression), ")"]
         self.assertEqual(self.minified._format_function_args([expression]), expected)
-        expression = parser._parse_exp_list()  # "ghi", "jkl"
+        expressions = parser._parse_exp_list()  # "ghi", "jkl"
         expected = [
             "(",
-            *self.normal.visit(expression[0]),
+            *self.normal.visit(expressions[0]),
             Separators.Argument,
-            *self.normal.visit(expression[1]),
+            *self.normal.visit(expressions[1]),
             ")",
         ]
-        self.assertEqual(self.normal._format_function_args(expression), expected)
-        self.assertEqual(self.minified._format_function_args(expression), expected)
+        self.assertEqual(self.normal._format_function_args(expressions), expected)
+        self.assertEqual(self.minified._format_function_args(expressions), expected)
 
     def test_format_var(self):
         exp = Parser("a.b")._parse_var()
@@ -413,7 +413,7 @@ class TestFormatter(unittest.TestCase):
 
     def test_UnOp(self):
         exp = Parser("-1")._parse_exp()
-        expected = ["-", "1"]
+        expected: list[str | Separators] = ["-", "1"]
         self.assertEqual(self.normal.visit(exp), expected)
         exp = Parser("-(1+2)")._parse_exp()
         expected = ["-", "(", "1", Separators.Space, "+", Separators.Space, "2", ")"]
@@ -451,6 +451,7 @@ class TestFormatter(unittest.TestCase):
 
     def test_LocalFunctionDefinition(self):
         stmt = Parser("local function abc(a)a=b end")._parse_local()
+        assert isinstance(stmt, LocalFunctionDefinition)
         expected = [
             Separators.Newline,
             "local",
@@ -550,7 +551,13 @@ class TestTokenFormatters(unittest.TestCase):
         self.assertFalse(sep_required("1", ","))
 
     def test_remove_separators(self):
-        base = ["a", Separators.Space, "b", Separators.Space, "("]
+        base: list[str | Separators] = [
+            "a",
+            Separators.Space,
+            "b",
+            Separators.Space,
+            "(",
+        ]
         expected = ["a", Separators.Space, "b", "("]
         remove_separators(base)
         self.assertEqual(base, expected)
@@ -576,7 +583,7 @@ class TestTokenFormatters(unittest.TestCase):
         self.assertEqual(base, expected)
 
     def test_resolve_tokens(self):
-        base = [
+        base: list[str | Separators] = [
             Separators.Space,
             Separators.Indent,
             Separators.DeIndent,
@@ -620,7 +627,7 @@ class TestTokenFormatters(unittest.TestCase):
         self.assertEqual(base, expected)
 
     def test_indent(self):
-        base = [
+        base: list[str | Separators] = [
             "a\n",
             Separators.Indent,
             "b\n",

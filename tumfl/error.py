@@ -30,3 +30,15 @@ class LexerError(TumflError):
         super().__init__(message)
         self.line: int = line
         self.column: int = column
+
+
+class SemanticError(TumflError):
+    def __init__(self, message: str, token: Token):
+        super().__init__(message)
+        self.token: Token = token
+
+
+class InterpreterError(TumflError):
+    def __init__(self, message: str, token: Token):
+        super().__init__(message)
+        self.token: Token = token
