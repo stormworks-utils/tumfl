@@ -1,6 +1,6 @@
 import unittest
 
-from tumfl.AST.Expression.Number import *
+from tumfl.AST.expression.number import *
 
 
 class TestNumber(unittest.TestCase):

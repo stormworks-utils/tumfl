@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import string
 from enum import Enum
-from typing import Iterator, Literal, Optional, Sequence, Type
+from typing import Any, Iterator, Literal, Optional, Sequence, Type
 
 from .AST import *
 from .basic_walker import BasicWalker
@@ -41,6 +41,8 @@ class FormattingStyle:
     BLOCK_SPACER: int = 5
     # Keep semicolons
     KEEP_SEMICOLON: bool = False
+    # add extra newlines, i.e. before and after functions
+    EXTRA_NEWLINES: bool = True
 
 
 class MinifiedStyle(FormattingStyle):
@@ -57,6 +59,7 @@ class MinifiedStyle(FormattingStyle):
     NEWLINE_LIMIT = 1
     LINE_WIDTH = 0
     BLOCK_SPACER = 0
+    EXTRA_NEWLINES = False
 
 
 class Separators(Enum):
@@ -89,6 +92,10 @@ ESCAPE_CHARACTERS: dict[str, str] = {
     "\t": "t",
     "\v": "v",
 }
+
+
+def unused(_: Any) -> None:
+    pass
 
 
 class Formatter(BasicWalker[Retype]):
@@ -165,7 +172,8 @@ class Formatter(BasicWalker[Retype]):
     def visit_Boolean(self, node: Boolean) -> Retype:
         return [str(node.value).lower()]
 
-    def visit_Break(self, _node: Break) -> Retype:
+    def visit_Break(self, node: Break) -> Retype:
+        unused(node)
         return ["break"]
 
     def visit_Chunk(self, node: Chunk) -> Retype:
@@ -208,7 +216,8 @@ class Formatter(BasicWalker[Retype]):
     def visit_Name(self, node: Name) -> Retype:
         return [node.variable_name]
 
-    def visit_Nil(self, _node: Nil) -> Retype:
+    def visit_Nil(self, node: Nil) -> Retype:
+        unused(node)
         return ["nil"]
 
     def visit_Number(self, node: Number) -> Retype:
@@ -224,7 +233,8 @@ class Formatter(BasicWalker[Retype]):
             *self.visit(node.condition),
         ]
 
-    def visit_Semicolon(self, _node: Semicolon) -> Retype:
+    def visit_Semicolon(self, node: Semicolon) -> Retype:
+        unused(node)
         return [";"] if self.s.KEEP_SEMICOLON else []
 
     def visit_String(self, node: String) -> Retype:
@@ -263,7 +273,8 @@ class Formatter(BasicWalker[Retype]):
     def visit_Table(self, node: Table) -> Retype:
         return ["{", *self._format_args(node.fields), "}"]
 
-    def visit_Vararg(self, _node: Vararg) -> Retype:
+    def visit_Vararg(self, node: Vararg) -> Retype:
+        unused(node)
         return ["..."]
 
     def visit_While(self, node: While) -> Retype:
@@ -318,8 +329,9 @@ class Formatter(BasicWalker[Retype]):
         full_name: Retype = Separators.Dot.join(self.visit(name) for name in node.names)
         if node.method_name:
             full_name += [":", *self.visit(node.method_name)]
+        extra_newline = (Separators.Newline,) if self.s.EXTRA_NEWLINES else ()
         return [
-            Separators.Newline,
+            *extra_newline,
             "function",
             Separators.Space,
             *full_name,
@@ -328,7 +340,7 @@ class Formatter(BasicWalker[Retype]):
             ")",
             *self.visit(node.body)[1:],
             Separators.Block,
-            Separators.Newline,
+            *extra_newline,
         ]
 
     def visit_IterativeFor(self, node: IterativeFor) -> Retype:

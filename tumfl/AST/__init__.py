@@ -1,3 +1,51 @@
-from .ASTNode import ASTNode
-from .Expression import *
-from .Statement import *
+from .ast_node import ASTNode
+from .base_function_definition import BaseFunctionDefinition
+from .expression import *
+from .statement import *
+
+# pylint: disable=duplicate-code
+__all__ = [
+    "ASTNode",
+    "BaseFunctionDefinition",
+    "BinaryOperand",
+    "BinOp",
+    "Boolean",
+    "ExpFunctionCall",
+    "ExpFunctionDefinition",
+    "ExpMethodInvocation",
+    "Expression",
+    "Index",
+    "Name",
+    "NamedIndex",
+    "Nil",
+    "Number",
+    "String",
+    "Table",
+    "ExplicitTableField",
+    "NamedTableField",
+    "NumberedTableField",
+    "TableField",
+    "UnaryOperand",
+    "UnOp",
+    "Vararg",
+    "Variable",
+    "Assign",
+    "Block",
+    "Break",
+    "Chunk",
+    "FunctionCall",
+    "FunctionDefinition",
+    "Goto",
+    "If",
+    "IterativeFor",
+    "Label",
+    "AttributedName",
+    "LocalAssign",
+    "LocalFunctionDefinition",
+    "MethodInvocation",
+    "NumericFor",
+    "Repeat",
+    "Semicolon",
+    "Statement",
+    "While",
+]

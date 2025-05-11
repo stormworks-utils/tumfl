@@ -1,7 +1,7 @@
 import unittest
 
 from tumfl.AST import *
-from tumfl.AST.BaseFunctionDefinition import BaseFunctionDefinition
+from tumfl.AST.base_function_definition import BaseFunctionDefinition
 from tumfl.lexer import Lexer
 from tumfl.parser import Parser, ParserError
 from tumfl.Token import Token, TokenType

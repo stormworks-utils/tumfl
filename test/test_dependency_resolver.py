@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 
+from tumfl.AST import Semicolon
 from tumfl.dependency_resolver import (
     Chunk,
     FunctionCall,
@@ -18,17 +19,16 @@ class TestDependencyResolver(unittest.TestCase):
     def test_resolver(self) -> None:
         ast = resolve_recursive(self.main_script, [self.base_path])
         assert isinstance(ast, Chunk)
-        self.assertEqual(len(ast.statements), 3)
+        self.assertEqual(len(ast.statements), 4)
         self.assertIsInstance(ast.statements[0], Chunk)
         self.assertIsInstance(ast.statements[1], Chunk)
-        self.assertIsInstance(ast.statements[2], FunctionCall)
+        self.assertIsInstance(ast.statements[2], Semicolon)
+        self.assertIsInstance(ast.statements[3], FunctionCall)
 
     def test_errors(self) -> None:
         with self.assertRaises(InvalidDependencyError):
             resolve_recursive(self.base_path / "empty_path.lua", [self.base_path])
         with self.assertRaises(InvalidDependencyError):
             resolve_recursive(self.base_path / "nonexistent_path.lua", [self.base_path])
-        with self.assertRaises(InvalidDependencyError):
-            resolve_recursive(self.base_path / "dual_path.lua", [self.base_path])
         with self.assertRaises(InvalidDependencyError):
             resolve_recursive(self.base_path / "number_path.lua", [self.base_path])

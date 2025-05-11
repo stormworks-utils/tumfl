@@ -4,7 +4,6 @@ import sys
 from typing import Callable, NoReturn, Optional
 
 from .AST import *
-from .AST.BaseFunctionDefinition import BaseFunctionDefinition
 from .error import ParserError
 from .lexer import Lexer
 from .Token import Token, TokenType
@@ -147,7 +146,8 @@ class Parser:
                 return self._parse_local()
             case TokenType.L_PAREN | TokenType.NAME:
                 return self._parse_var_stmt()
-        self._error("Unexpected statement", self.current_token)
+            case _:
+                self._error("Unexpected statement", self.current_token)
 
     def _parse_break(self) -> Break:
         """Parse a break statement"""

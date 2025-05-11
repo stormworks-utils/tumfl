@@ -54,6 +54,7 @@ options:
                         `"$$name"` (if `$$` is your prefix, and `name` the name to look up).
   --config-prefix CONFIG_PREFIX
                         Prefix for names to be replaced by config values (default: $$)
+  -m, --minify          Minify the output
 ```
 
 # Current status
@@ -72,4 +73,9 @@ options:
 
 ## Minifier
 
- - Not existent
+> [!CAUTION]
+> The minifier is very experimental, and may change the semantics of your program. Use at your own risk.
+> If it breaks, please open an issue.
+
+ - Minifies Names (normal variables)
+ - Creates aliases (i.e. when `table` is used often, creates `a=table` and uses `a` instead of `table`)

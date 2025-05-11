@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Generic, NoReturn, TypeVar
+from typing import Generic, NoReturn, Optional, TypeVar
 
 from .AST import *
 
@@ -17,8 +17,11 @@ class NodeVisitor(Generic[T]):
     def generic_visit(self, node: ASTNode) -> NoReturn:
         raise RuntimeError(f"No visit_{type(node).__name__} method")
 
+    def __call__(self, node: ASTNode) -> T:
+        return self.visit(node)
 
-class BasicWalker(NodeVisitor, Generic[T], ABC):
+
+class BasicWalker(NodeVisitor[T], ABC):
     # pylint: disable=unused-argument,too-many-public-methods
     def visit_BinOp(self, node: BinOp) -> T:
         self.visit(node.right)
@@ -231,9 +234,189 @@ class NoneWalker(BasicWalker[None]):
     def visit_LocalAssign(self, node: LocalAssign) -> None:
         for var in node.variable_names:
             self.visit(var.name)
+            if var.attribute:
+                self.visit(var.attribute)
         if node.expressions:
             for expr in node.expressions:
                 self.visit(expr)
 
     def visit_Semicolon(self, node: Semicolon) -> None:
         pass
+
+
+V = TypeVar("V")
+
+
+class OptionalWalker(BasicWalker[Optional[V]]):
+    # pylint: disable=too-many-public-methods
+    def visit_BinOp(self, node: BinOp) -> Optional[V]:
+        if ret := self.visit(node.right):
+            return ret
+        return self.visit(node.left)
+
+    def visit_Boolean(self, node: Boolean) -> Optional[V]:
+        return None
+
+    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> Optional[V]:
+        if ret := self.visit(node.function):
+            return ret
+        for argument in node.arguments:
+            if ret := self.visit(argument):
+                return ret
+        return None
+
+    def visit_ExpFunctionDefinition(self, node: ExpFunctionDefinition) -> Optional[V]:
+        for parameter in node.parameters:
+            if ret := self.visit(parameter):
+                return ret
+        return self.visit(node.body)
+
+    def visit_ExpMethodInvocation(self, node: ExpMethodInvocation) -> Optional[V]:
+        if ret := self.visit(node.function):
+            return ret
+        if ret := self.visit(node.method):
+            return ret
+        for argument in node.arguments:
+            if ret := self.visit(argument):
+                return ret
+        return None
+
+    def visit_Index(self, node: Index) -> Optional[V]:
+        if ret := self.visit(node.lhs):
+            return ret
+        return self.visit(node.variable_name)
+
+    def visit_Name(self, node: Name) -> Optional[V]:
+        return None
+
+    def visit_NamedIndex(self, node: NamedIndex) -> Optional[V]:
+        if ret := self.visit(node.lhs):
+            return ret
+        return self.visit(node.variable_name)
+
+    def visit_Nil(self, node: Nil) -> Optional[V]:
+        return None
+
+    def visit_Number(self, node: Number) -> Optional[V]:
+        return None
+
+    def visit_String(self, node: String) -> Optional[V]:
+        return None
+
+    def visit_Table(self, node: Table) -> Optional[V]:
+        return None
+
+    def visit_Vararg(self, node: Vararg) -> Optional[V]:
+        return None
+
+    def visit_Assign(self, node: Assign) -> Optional[V]:
+        return None
+
+    def visit_Block(self, node: Block) -> Optional[V]:
+        return None
+
+    def visit_Break(self, node: Break) -> Optional[V]:
+        return None
+
+    def visit_FunctionCall(self, node: FunctionCall) -> Optional[V]:
+        if ret := self.visit(node.function):
+            return ret
+        for argument in node.arguments:
+            if ret := self.visit(argument):
+                return ret
+        return None
+
+    def visit_FunctionDefinition(self, node: FunctionDefinition) -> Optional[V]:
+        for name in node.names:
+            if ret := self.visit(name):
+                return ret
+        if node.method_name:
+            if ret := self.visit(node.method_name):
+                return ret
+        for parameter in node.parameters:
+            if ret := self.visit(parameter):
+                return ret
+        return self.visit(node.body)
+
+    def visit_Goto(self, node: Goto) -> Optional[V]:
+        return None
+
+    def visit_If(self, node: If) -> Optional[V]:
+        if ret := self.visit(node.test):
+            return ret
+        if ret := self.visit(node.true):
+            return ret
+        if node.false:
+            if ret := self.visit(node.false):
+                return ret
+        return None
+
+    def visit_IterativeFor(self, node: IterativeFor) -> Optional[V]:
+        for name in node.namelist:
+            if ret := self.visit(name):
+                return ret
+        for expression in node.explist:
+            if ret := self.visit(expression):
+                return ret
+        return self.visit(node.body)
+
+    def visit_Label(self, node: Label) -> Optional[V]:
+        return None
+
+    def visit_LocalAssign(self, node: LocalAssign) -> Optional[V]:
+        return None
+
+    def visit_LocalFunctionDefinition(
+        self, node: LocalFunctionDefinition
+    ) -> Optional[V]:
+        if ret := self.visit(node.function_name):
+            return ret
+        for parameter in node.parameters:
+            if ret := self.visit(parameter):
+                return ret
+        return self.visit(node.body)
+
+    def visit_MethodInvocation(self, node: MethodInvocation) -> Optional[V]:
+        if ret := self.visit(node.function):
+            return ret
+        if ret := self.visit(node.method):
+            return ret
+        for argument in node.arguments:
+            if ret := self.visit(argument):
+                return ret
+        return None
+
+    def visit_NumericFor(self, node: NumericFor) -> Optional[V]:
+        if ret := self.visit(node.variable_name):
+            return ret
+        if ret := self.visit(node.start):
+            return ret
+        if ret := self.visit(node.stop):
+            return ret
+        if node.step:
+            if ret := self.visit(node.step):
+                return ret
+        return self.visit(node.body)
+
+    def visit_Repeat(self, node: Repeat) -> Optional[V]:
+        if ret := self.visit(node.condition):
+            return ret
+        return self.visit(node.body)
+
+    def visit_Semicolon(self, node: Semicolon) -> Optional[V]:
+        return None
+
+    def visit_While(self, node: While) -> Optional[V]:
+        if ret := self.visit(node.condition):
+            return ret
+        return self.visit(node.body)
+
+    def visit_NamedTableField(self, node: NamedTableField) -> Optional[V]:
+        if ret := self.visit(node.field_name):
+            return ret
+        return self.visit(node.value)
+
+    def visit_ExplicitTableField(self, node: ExplicitTableField) -> Optional[V]:
+        if ret := self.visit(node.at):
+            return ret
+        return self.visit(node.value)

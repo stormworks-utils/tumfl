@@ -26,7 +26,7 @@ from .Token import Token, TokenType
 def _parse_file(path: Path, config: Optional[Config]) -> Chunk:
     with path.open() as f:
         chunk: str = f.read()
-    ast = parse(chunk)
+    ast: Chunk = parse(chunk)
     ast.parent(None, path)
     if config:
         config.visit(ast)
@@ -123,7 +123,7 @@ class ResolveDependencies(NoneWalker):
                         f"Wrong require() arguments. Expected string or table, got {arg}",
                         node.token,
                     )
-            ast: Union[Chunk | Semicolon | Block]
+            ast: Union[Chunk, Semicolon, Block]
             if not results:
                 ast = Semicolon(node.token)
                 ast.parent(node.parent_class, node.file_name)
@@ -138,7 +138,7 @@ class ResolveDependencies(NoneWalker):
         if ast := self.__get_ast(node):
             if isinstance(ast, Semicolon):
                 assert node.parent_class
-                node.parent_class.remove_child(node)
+                node.remove()
             else:
                 ast.parent_class = node.parent_class
                 node.replace(ast)
