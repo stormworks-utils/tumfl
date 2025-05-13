@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from .AST import (
     ASTNode,
@@ -17,10 +17,12 @@ from .AST import (
     Table,
 )
 from .basic_walker import NoneWalker
-from .config import Config
 from .error import InvalidDependencyError
 from .parser import parse
 from .Token import Token, TokenType
+
+if TYPE_CHECKING:
+    from .config import Config
 
 
 def _parse_file(path: Path, config: Optional[Config]) -> Chunk:
