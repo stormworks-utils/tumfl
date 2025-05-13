@@ -87,8 +87,8 @@ def replace_name(name: Name, replacement: str) -> None:
             raise NotImplementedError("Name can not be method")
         parent.names[: idx + 1] = [name]
     elif isinstance(parent, MethodInvocation):
-        assert name is not parent.method
-        raise NotImplementedError("TODO: Figure out")
+        if name is parent.method:
+            raise NotImplementedError("Name can not be method")
     elif isinstance(parent, NamedIndex):
         if name is parent.variable_name:
             parent.replace(name)

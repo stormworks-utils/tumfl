@@ -66,7 +66,8 @@ class Variable:
         self._shared: SharedList[Variable] = SharedList(self)
 
     def remove(self, name: Name) -> None:
-        assert name in self
+        if name not in self:
+            return
         for i, test in enumerate(self.writes):
             if test is name:
                 self.writes.pop(i)
@@ -90,8 +91,8 @@ class Variable:
 
     def __register(self, name: Name) -> None:
         name.set_attribute(self)
-        assert name.parent_class
-        name.parent_class.set_attribute(self)
+        if name.parent_class:
+            name.parent_class.set_attribute(self)
 
     def add_write(self, write: Name) -> None:
         self.writes.append(write)
@@ -103,10 +104,13 @@ class Variable:
             return True
         return any(read is item for read in self.reads)
 
-    def add_read(self, read: Name) -> None:
+    def add_read(self, read: Name, is_method: bool) -> None:
         if read not in self:
             self.reads.append(read)
             self.__register(read)
+        if is_method:
+            # do not mess with method invocations
+            self.preserve.value = True
 
     def add_variable(self, name: Name) -> Variable:
         self.children[name.variable_name] = self.children.get(
@@ -224,16 +228,16 @@ class Scope:
         self.__register(name)
         return self.variables[name.variable_name]
 
-    def use_variable(self, name: Name) -> Variable:
+    def use_variable(self, name: Name, is_method: bool) -> Variable:
         if name.variable_name in self.variables:
-            self.variables[name.variable_name].add_read(name)
+            self.variables[name.variable_name].add_read(name, is_method)
             self.__register(name)
             return self.variables[name.variable_name]
         if self.parent:
-            return self.parent.use_variable(name)
+            return self.parent.use_variable(name, is_method)
         # unknown global
         self.add_variable(name, False, False, False)
-        return self.use_variable(name)
+        return self.use_variable(name, is_method)
 
     def __repr__(self) -> str:
         return f"Scope({self.level=}, {self.variables=}, {self.children=})"
@@ -295,13 +299,13 @@ class GetNames(NoneWalker):
 
     def read_var(self, node: ASTNode) -> None:
         if isinstance(node, Name) and node.variable_name not in self.ignored_names:
-            self.current_scope.use_variable(node)
+            self.current_scope.use_variable(node, False)
         elif isinstance(node, NamedIndex):
             self.read_var(node.lhs)
             self.handle_subscript(node.lhs, node.variable_name)
 
     def handle_subscript(
-        self, base: ASTNode, extension: ASTNode, assign: bool = False
+        self, base: ASTNode, extension: ASTNode, assign: bool = False, is_method: bool = False
     ) -> None:
         if (var := base.get_attribute(Variable)) and isinstance(extension, Name):
             new_var = var.add_variable(extension)
@@ -309,7 +313,7 @@ class GetNames(NoneWalker):
             if assign:
                 new_var.add_write(extension)
             else:
-                new_var.add_read(extension)
+                new_var.add_read(extension, is_method)
 
     def set_preserve(self, node: Statement) -> None:
         if any("preserve" in comment for comment in node.token.comment):
@@ -320,12 +324,12 @@ class GetNames(NoneWalker):
     def visit_FunctionDefinition(self, node: FunctionDefinition) -> None:
         self.set_preserve(node)
         last_name: Name = node.names[0]
-        self.add_var_opt(last_name, True)
+        self.add_var_opt(last_name, global_=True)
         for name in node.names[1:]:
-            self.handle_subscript(last_name, name, True)
+            self.handle_subscript(last_name, name, assign=True)
             last_name = name
         if node.method_name:
-            self.handle_subscript(last_name, node.method_name, True)
+            self.handle_subscript(last_name, node.method_name, assign=True, is_method=True)
         self.preserve = False
         self.push_outer_scope()
         for param in node.parameters:
@@ -428,7 +432,7 @@ class GetNames(NoneWalker):
 
     def visit_MethodInvocation(self, node: MethodInvocation) -> None:
         super().visit_MethodInvocation(node)
-        self.handle_subscript(node.function, node.method)
+        self.handle_subscript(node.function, node.method, is_method=True)
 
     def visit_Index(self, node: Index) -> None:
         super().visit_Index(node)
@@ -459,8 +463,8 @@ class RemoveUnused(NoneWalker):
                 return False
         self.found_any = True
         self.remove(node)
-        assert node.parent_class
-        node.remove()
+        if node.parent_class:
+            node.remove()
         return True
 
     def visit_Assign(self, node: Assign) -> None:
