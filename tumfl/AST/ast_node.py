@@ -38,7 +38,7 @@ class ASTNode(ABC):
         )
 
     def __repr__(self) -> str:
-        return generic_str(self, ["replace", "parent", "parent_class"])
+        return generic_str(self, ["parent_class"])
 
     def __dir(self) -> Generator[str, None, None]:
         return (
@@ -48,13 +48,7 @@ class ASTNode(ABC):
             # ignore "token" for comparison (and parent check)
             and i
             not in [
-                "replace",
-                "parent",
-                "remove",
-                "set_attribute",
-                "get_attribute",
                 "parent_class",
-                "var",
                 "token",
                 "comment",
                 "attributes",
@@ -63,30 +57,38 @@ class ASTNode(ABC):
             ]
         )
 
+    def __get_children(self) -> Generator[ASTNode, None, None]:
+        from tumfl.AST.statement.local_assign import AttributedName
+
+        for name in self.__dir():
+            node: Any = getattr(self, name)
+            if isinstance(node, ASTNode):
+                yield node
+            elif isinstance(node, list):
+                for child in node:
+                    if isinstance(child, ASTNode):
+                        yield child
+                    elif isinstance(node, AttributedName):
+                        yield node.name
+                        if node.attribute is not None:
+                            yield node.attribute
+
     def parent(
         self, parent: Optional[ASTNode], file_name: Optional[Path] = None
     ) -> None:
 
         self.parent_class = parent
         self.file_name = file_name
-        for i in self.__dir():
-            node: Any = getattr(self, i)
-            if isinstance(node, ASTNode):
-                node.parent(self, file_name)
-            elif (
-                isinstance(node, list)
-                and len(node) > 0
-                and isinstance(node[0], ASTNode)
-            ):
-                for node in node:
-                    assert isinstance(node, ASTNode)
-                    node.parent(self, file_name)
+        for child in self.__get_children():
+            child.parent(self, file_name)
 
     def replace(self, replacement: ASTNode) -> None:
         """Replaces node in-place"""
         self.__class__ = replacement.__class__  # type: ignore
         self.__dict__.clear()
         self.__dict__.update(replacement.__dict__)
+        for child in self.__get_children():
+            child.parent_class = self
 
     def remove(self) -> None:
         """Removes a child by replacing it with Semicolon or Boolean"""

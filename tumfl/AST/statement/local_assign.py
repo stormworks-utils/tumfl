@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence
 from .statement import Statement
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
-    from tumfl.AST import ASTNode, Expression, Name
+    from tumfl.AST import Expression, Name
     from tumfl.Token import Token
 
 
@@ -44,13 +42,3 @@ class LocalAssign(Statement):
         self.expressions: Optional[list[Expression]] = (
             list(expressions) if expressions is not None else None
         )
-
-    def parent(
-        self, parent: Optional[ASTNode], file_name: Optional[Path] = None
-    ) -> None:
-        # due to attributed names not being AST nodes, the auto implementation does not work
-        super().parent(parent, file_name)
-        for name in self.variable_names:
-            name.name.parent(self, file_name)
-            if name.attribute:
-                name.attribute.parent(self, file_name)
