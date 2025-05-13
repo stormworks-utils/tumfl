@@ -68,10 +68,10 @@ class ASTNode(ABC):
                 for child in node:
                     if isinstance(child, ASTNode):
                         yield child
-                    elif isinstance(node, AttributedName):
-                        yield node.name
-                        if node.attribute is not None:
-                            yield node.attribute
+                    elif isinstance(child, AttributedName):
+                        yield child.name
+                        if child.attribute is not None:
+                            yield child.attribute
 
     def parent(
         self, parent: Optional[ASTNode], file_name: Optional[Path] = None
