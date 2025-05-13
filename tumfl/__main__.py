@@ -1,7 +1,7 @@
 import argparse
 import logging
 import time
-from logging import error, info, warning
+from logging import error, info
 from pathlib import Path
 from typing import Optional
 
@@ -14,9 +14,8 @@ except ImportError:
     EVENT_TYPE_OPENED = "opened"  # type: ignore
 
 from tumfl import format, minifier
-from tumfl.AST import Assign, ASTNode, Name
-from tumfl.basic_walker import NoneWalker
-from tumfl.config import Config
+from tumfl.AST import ASTNode
+from tumfl.config import Config, parse_config
 from tumfl.dependency_resolver import resolve_recursive
 from tumfl.error import TumflError
 
@@ -30,24 +29,6 @@ class RunConfig:
         self.destination: Optional[Path] = destination
         self.config: Config = config
         self.minify: bool = minify
-
-
-class ParameterGetter(NoneWalker):
-    def __init__(self) -> None:
-        super().__init__()
-        self.parameters: dict[str, ASTNode] = {}
-
-    def visit_Assign(self, node: Assign) -> None:
-        if (
-            len(node.targets) == 1
-            and isinstance(node.targets[0], Name)
-            and len(node.expressions) == 1
-        ):
-            name = node.targets[0]
-            assert isinstance(name, Name)
-            self.parameters[name.variable_name] = node.expressions[0]
-        else:
-            warning(f"Ignoring config parameter {node}")
 
 
 def compile_file(filename: Path, config: Config, minify: bool) -> str:
@@ -101,13 +82,6 @@ def follow(config: RunConfig) -> None:
     observer.join()
 
 
-def parse_config(file: Path) -> dict[str, ASTNode]:
-    chunk: ASTNode = resolve_recursive(file, [file.parent])
-    getter = ParameterGetter()
-    getter.visit(chunk)
-    return getter.parameters
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compile lua files", prog="tumfl")
     parser.add_argument("source_file", type=Path, help="Source file to compile")
@@ -153,9 +127,10 @@ def main() -> None:
         datefmt="%Y-%m-%dT%H:%M:%S%z",
         level=loglevel,
     )
-    config = Config({}, prefix=args.config_prefix)
+    config = Config({})
     if args.config_file:
-        config.replacements = parse_config(args.config_file)
+        config = parse_config(args.config_file)
+    config.prefix = args.config_prefix
     run_config = RunConfig(args.source_file, args.destination_file, config, args.minify)
     if args.follow:
         follow(run_config)
