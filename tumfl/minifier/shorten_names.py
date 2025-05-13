@@ -305,7 +305,11 @@ class GetNames(NoneWalker):
             self.handle_subscript(node.lhs, node.variable_name)
 
     def handle_subscript(
-        self, base: ASTNode, extension: ASTNode, assign: bool = False, is_method: bool = False
+        self,
+        base: ASTNode,
+        extension: ASTNode,
+        assign: bool = False,
+        is_method: bool = False,
     ) -> None:
         if (var := base.get_attribute(Variable)) and isinstance(extension, Name):
             new_var = var.add_variable(extension)
@@ -329,7 +333,9 @@ class GetNames(NoneWalker):
             self.handle_subscript(last_name, name, assign=True)
             last_name = name
         if node.method_name:
-            self.handle_subscript(last_name, node.method_name, assign=True, is_method=True)
+            self.handle_subscript(
+                last_name, node.method_name, assign=True, is_method=True
+            )
         self.preserve = False
         self.push_outer_scope()
         for param in node.parameters:
