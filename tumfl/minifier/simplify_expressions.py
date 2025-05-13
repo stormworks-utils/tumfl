@@ -1,7 +1,7 @@
 from typing import Optional
 
-from tumfl.AST import BinaryOperand, BinOp, Number, UnaryOperand, UnOp
-from tumfl.basic_walker import NoneWalker
+from tumfl.AST import BinaryOperand, BinOp, Number, UnaryOperand, UnOp, If, Boolean
+from tumfl.basic_walker import NoneWalker, T
 
 
 class Simplify(NoneWalker):
@@ -55,3 +55,10 @@ class Simplify(NoneWalker):
                         else BinaryOperand.PLUS
                     )
                     node.replace(node.right)
+
+    def visit_If(self, node: If) -> None:
+        if isinstance(node.test, Boolean):
+            if node.test.value:
+                node.replace(node.true)
+            elif node.false:
+                node.replace(node.false)
