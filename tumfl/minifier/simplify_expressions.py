@@ -1,7 +1,7 @@
 from typing import Optional
 
-from tumfl.AST import BinaryOperand, BinOp, Number, UnaryOperand, UnOp, If, Boolean
-from tumfl.basic_walker import NoneWalker, T
+from tumfl.AST import BinaryOperand, BinOp, Boolean, If, Number, UnaryOperand, UnOp
+from tumfl.basic_walker import NoneWalker
 
 
 class Simplify(NoneWalker):
