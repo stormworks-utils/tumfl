@@ -1,10 +1,42 @@
 from typing import Optional
 
-from tumfl.AST import BinaryOperand, BinOp, Boolean, If, Number, UnaryOperand, UnOp
-from tumfl.basic_walker import NoneWalker
+from tumfl.AST import (
+    ASTNode,
+    BinaryOperand,
+    BinOp,
+    Block,
+    Boolean,
+    ExpFunctionCall,
+    ExpFunctionDefinition,
+    FunctionCall,
+    FunctionDefinition,
+    If,
+    LocalFunctionDefinition,
+    Number,
+    Semicolon,
+    UnaryOperand,
+    UnOp,
+)
+from tumfl.basic_walker import AggregatingWalker, NoneWalker
+from tumfl.minifier.shorten_names import Variable
+
+
+class HasReturn(AggregatingWalker[bool]):
+    def aggregation_function(self, a: bool, b: bool) -> bool:
+        return a or b
+
+    def default_value(self) -> bool:
+        return False
+
+    def visit_Block(self, node: Block) -> bool:
+        return bool(node.returns) or super().visit_Block(node)
 
 
 class Simplify(NoneWalker):
+    def __init__(self) -> None:
+        super().__init__()
+        self.has_return = HasReturn()
+
     def visit_BinOp(self, node: BinOp) -> None:
         super().visit_BinOp(node)
         if isinstance(node.left, Number) and isinstance(node.right, Number):
@@ -57,8 +89,33 @@ class Simplify(NoneWalker):
                     node.replace(node.right)
 
     def visit_If(self, node: If) -> None:
+        super().visit_If(node)
         if isinstance(node.test, Boolean):
             if node.test.value:
                 node.replace(node.true)
             elif node.false:
                 node.replace(node.false)
+
+    def handle_function(self, node: FunctionCall | ExpFunctionCall) -> None:
+        var = node.get_attribute(Variable)
+        if var and len(var.writes) == 1:
+            definition: Optional[ASTNode] = var.writes[0].parent_class
+            assert isinstance(
+                definition,
+                (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition),
+            )
+            if all(
+                isinstance(child, Semicolon) for child in definition.body.statements
+            ):
+                node.remove()
+            elif len(var.reads) == 1 and not self.has_return(definition.body):
+                # inline function
+                ...
+
+    def visit_FunctionCall(self, node: FunctionCall) -> None:
+        super().visit_FunctionCall(node)
+        self.handle_function(node)
+
+    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> None:
+        super().visit_ExpFunctionCall(node)
+        self.handle_function(node)
