@@ -420,3 +420,190 @@ class OptionalWalker(BasicWalker[Optional[V]]):
         if ret := self.visit(node.at):
             return ret
         return self.visit(node.value)
+
+
+class AggregatingWalker(BasicWalker[T], ABC):
+    # pylint: disable=unused-argument,too-many-public-methods
+    @abstractmethod
+    def aggregation_function(self, a: T, b: T) -> T:
+        """Function to aggregate two values"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def default_value(self) -> T:
+        """Default value for the aggregation"""
+        raise NotImplementedError
+
+    def visit_BinOp(self, node: BinOp) -> T:
+        return self.aggregation_function(self.visit(node.right), self.visit(node.left))
+
+    def visit_Boolean(self, node: Boolean) -> T:
+        return self.default_value()
+
+    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> T:
+        ret: T = self.visit(node.function)
+        for argument in node.arguments:
+            ret = self.aggregation_function(ret, self.visit(argument))
+        return ret
+
+    def visit_ExpFunctionDefinition(self, node: ExpFunctionDefinition) -> T:
+        ret: T = self.default_value()
+        for parameter in node.parameters:
+            ret = self.aggregation_function(ret, self.visit(parameter))
+        return self.aggregation_function(ret, self.visit(node.body))
+
+    def visit_ExpMethodInvocation(self, node: ExpMethodInvocation) -> T:
+        ret: T = self.visit(node.function)
+        ret = self.aggregation_function(ret, self.visit(node.method))
+        for argument in node.arguments:
+            ret = self.aggregation_function(ret, self.visit(argument))
+        return ret
+
+    def visit_Index(self, node: Index) -> T:
+        return self.aggregation_function(
+            self.visit(node.lhs), self.visit(node.variable_name)
+        )
+
+    def visit_Name(self, node: Name) -> T:
+        return self.default_value()
+
+    def visit_NamedIndex(self, node: NamedIndex) -> T:
+        return self.aggregation_function(
+            self.visit(node.lhs), self.visit(node.variable_name)
+        )
+
+    def visit_Nil(self, node: Nil) -> T:
+        return self.default_value()
+
+    def visit_Number(self, node: Number) -> T:
+        return self.default_value()
+
+    def visit_String(self, node: String) -> T:
+        return self.default_value()
+
+    def visit_Table(self, node: Table) -> T:
+        ret: T = self.default_value()
+        for field in node.fields:
+            ret = self.aggregation_function(ret, self.visit(field))
+        return ret
+
+    def visit_UnOp(self, node: UnOp) -> T:
+        return self.visit(node.right)
+
+    def visit_Vararg(self, node: Vararg) -> T:
+        return self.default_value()
+
+    def visit_Assign(self, node: Assign) -> T:
+        ret: T = self.default_value()
+        for target in node.targets:
+            ret = self.aggregation_function(ret, self.visit(target))
+        for expr in node.expressions:
+            ret = self.aggregation_function(ret, self.visit(expr))
+        return ret
+
+    def visit_Block(self, node: Block) -> T:
+        ret: T = self.default_value()
+        for stmt in node.statements:
+            ret = self.aggregation_function(ret, self.visit(stmt))
+        if node.returns:
+            for expr in node.returns:
+                ret = self.aggregation_function(ret, self.visit(expr))
+        return ret
+
+    def visit_Break(self, node: Break) -> T:
+        return self.default_value()
+
+    def visit_Chunk(self, node: Chunk) -> T:
+        return self.visit_Block(node)
+
+    def visit_FunctionCall(self, node: FunctionCall) -> T:
+        ret: T = self.visit(node.function)
+        for argument in node.arguments:
+            ret = self.aggregation_function(ret, self.visit(argument))
+        return ret
+
+    def visit_FunctionDefinition(self, node: FunctionDefinition) -> T:
+        ret: T = self.default_value()
+        for name in node.names:
+            ret = self.aggregation_function(ret, self.visit(name))
+        if node.method_name:
+            ret = self.aggregation_function(ret, self.visit(node.method_name))
+        for parameter in node.parameters:
+            ret = self.aggregation_function(ret, self.visit(parameter))
+        return self.aggregation_function(ret, self.visit(node.body))
+
+    def visit_Goto(self, node: Goto) -> T:
+        return self.default_value()
+
+    def visit_If(self, node: If) -> T:
+        ret: T = self.visit(node.test)
+        ret = self.aggregation_function(ret, self.visit(node.true))
+        if node.false:
+            ret = self.aggregation_function(ret, self.visit(node.false))
+        return ret
+
+    def visit_IterativeFor(self, node: IterativeFor) -> T:
+        ret: T = self.default_value()
+        for name in node.namelist:
+            ret = self.aggregation_function(ret, self.visit(name))
+        for expression in node.explist:
+            ret = self.aggregation_function(ret, self.visit(expression))
+        return self.aggregation_function(ret, self.visit(node.body))
+
+    def visit_Label(self, node: Label) -> T:
+        return self.default_value()
+
+    def visit_LocalAssign(self, node: LocalAssign) -> T:
+        ret: T = self.default_value()
+        for var in node.variable_names:
+            ret = self.aggregation_function(ret, self.visit(var.name))
+            if var.attribute:
+                ret = self.aggregation_function(ret, self.visit(var.attribute))
+        if node.expressions:
+            for expr in node.expressions:
+                ret = self.aggregation_function(ret, self.visit(expr))
+        return ret
+
+    def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> T:
+        ret: T = self.visit(node.function_name)
+        for parameter in node.parameters:
+            ret = self.aggregation_function(ret, self.visit(parameter))
+        return self.aggregation_function(ret, self.visit(node.body))
+
+    def visit_MethodInvocation(self, node: MethodInvocation) -> T:
+        ret: T = self.visit(node.function)
+        ret = self.aggregation_function(ret, self.visit(node.method))
+        for argument in node.arguments:
+            ret = self.aggregation_function(ret, self.visit(argument))
+        return ret
+
+    def visit_NumericFor(self, node: NumericFor) -> T:
+        ret: T = self.visit(node.variable_name)
+        ret = self.aggregation_function(ret, self.visit(node.start))
+        ret = self.aggregation_function(ret, self.visit(node.stop))
+        if node.step:
+            ret = self.aggregation_function(ret, self.visit(node.step))
+        return self.aggregation_function(ret, self.visit(node.body))
+
+    def visit_Repeat(self, node: Repeat) -> T:
+        return self.aggregation_function(
+            self.visit(node.condition), self.visit(node.body)
+        )
+
+    def visit_Semicolon(self, node: Semicolon) -> T:
+        return self.default_value()
+
+    def visit_While(self, node: While) -> T:
+        ret: T = self.visit(node.condition)
+        return self.aggregation_function(ret, self.visit(node.body))
+
+    def visit_NamedTableField(self, node: NamedTableField) -> T:
+        ret: T = self.visit(node.field_name)
+        return self.aggregation_function(ret, self.visit(node.value))
+
+    def visit_NumberedTableField(self, node: NumberedTableField) -> T:
+        return self.visit(node.value)
+
+    def visit_ExplicitTableField(self, node: ExplicitTableField) -> T:
+        ret: T = self.visit(node.at)
+        return self.aggregation_function(ret, self.visit(node.value))
