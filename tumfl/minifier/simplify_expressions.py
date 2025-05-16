@@ -6,7 +6,6 @@ from tumfl.AST import (
     BinOp,
     Block,
     Boolean,
-    ExpFunctionCall,
     ExpFunctionDefinition,
     FunctionCall,
     FunctionDefinition,
@@ -16,9 +15,23 @@ from tumfl.AST import (
     Semicolon,
     UnaryOperand,
     UnOp,
+    Name,
 )
 from tumfl.basic_walker import AggregatingWalker, NoneWalker
-from tumfl.minifier.shorten_names import Variable
+from .util.variable import Variable
+from .util.remove_name import RemoveName
+
+
+class ReplaceName(NoneWalker):
+    def __init__(self, replacements: dict[Name, Name]) -> None:
+        super().__init__()
+        self.replacements: dict[Name, Name] = replacements
+
+    def visit_Name(self, node: Name) -> None:
+        if node in self.replacements:
+            node.replace(self.replacements[node])
+        else:
+            super().visit_Name(node)
 
 
 class HasReturn(AggregatingWalker[bool]):
@@ -36,6 +49,7 @@ class Simplify(NoneWalker):
     def __init__(self) -> None:
         super().__init__()
         self.has_return = HasReturn()
+        self.remove_name = RemoveName()
 
     def visit_BinOp(self, node: BinOp) -> None:
         super().visit_BinOp(node)
@@ -96,26 +110,35 @@ class Simplify(NoneWalker):
             elif node.false:
                 node.replace(node.false)
 
-    def handle_function(self, node: FunctionCall | ExpFunctionCall) -> None:
+    def visit_FunctionCall(self, node: FunctionCall) -> None:
+        super().visit_FunctionCall(node)
         var = node.get_attribute(Variable)
         if var and len(var.writes) == 1:
             definition: Optional[ASTNode] = var.writes[0].parent_class
-            assert isinstance(
+            if not isinstance(
                 definition,
                 (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition),
-            )
+            ):
+                warn
             if all(
                 isinstance(child, Semicolon) for child in definition.body.statements
-            ):
+            ) and not definition.body.returns:
+                self.remove_name(node)
                 node.remove()
-            elif len(var.reads) == 1 and not self.has_return(definition.body):
-                # inline function
-                ...
-
-    def visit_FunctionCall(self, node: FunctionCall) -> None:
-        super().visit_FunctionCall(node)
-        self.handle_function(node)
-
-    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> None:
-        super().visit_ExpFunctionCall(node)
-        self.handle_function(node)
+                if len(var.reads) == 0:
+                    definition.remove()
+            elif (
+                len(var.reads) == 1
+                and all(isinstance(arg, Name) for arg in node.arguments)
+                and all(isinstance(arg, Name) for arg in definition.parameters)
+                and not self.has_return(definition.body)
+            ):
+                # Inlining is quite conservative, inlining only functions that have only name arguments,
+                # and no return statements (and for obvious reasons, only if there is only 1 callee)
+                replacements: dict[Name, Name] = {}
+                for arg, value in zip(definition.parameters, node.arguments):
+                    assert isinstance(arg, Name) and isinstance(value, Name)
+                    replacements[arg] = value
+                ReplaceName(replacements).visit(definition.body)
+                node.replace(definition.body)
+                definition.remove()
