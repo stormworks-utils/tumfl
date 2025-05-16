@@ -107,5 +107,12 @@ class ASTNode(ABC):
     def set_attribute(self, value: Any) -> None:
         self.attributes[type(value)] = value
 
+    def set_attribute_if_not_exists(self, value: Any) -> None:
+        if type(value) not in self.attributes:
+            self.set_attribute(value)
+
     def get_attribute(self, key: Type[T]) -> Optional[T]:
         return self.attributes.get(key)
+
+    def __hash__(self) -> int:
+        return hash(getattr(self, name) for name in self.__dir() if not callable(getattr(self, name)))
