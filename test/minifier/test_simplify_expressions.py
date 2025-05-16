@@ -1,7 +1,8 @@
 import unittest
+
 from tumfl import parse
-from tumfl.minifier.simplify_expressions import Simplify
 from tumfl.minifier.shorten_names import GetNames
+from tumfl.minifier.simplify_expressions import Simplify
 
 
 class TestInlineFunction(unittest.TestCase):
@@ -85,5 +86,5 @@ class TestInlineFunction(unittest.TestCase):
         self.compare_code(code, expected)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

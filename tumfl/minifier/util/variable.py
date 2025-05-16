@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from tumfl.AST import Name
-from tumfl.minifier.util.replacements import Replacements, ReplacementCollection
 from tumfl.minifier.util import MutableBool, SharedList
+from tumfl.minifier.util.replacements import ReplacementCollection, Replacements
 
 
 class Variable:
@@ -144,4 +144,5 @@ class Variable:
 
 
 # circular dependency
+# pylint: disable=wrong-import-position
 from tumfl.minifier.util.scope import Scope

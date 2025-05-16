@@ -241,7 +241,7 @@ class RemoveUnused(NoneWalker):
 
     def visit_LocalAssign(self, node: LocalAssign) -> None:
         if all(
-                (var := name.name.get_attribute(Variable)) and var.is_unused()
+            (var := name.name.get_attribute(Variable)) and var.is_unused()
             for name in node.variable_names
         ):
             if self.cleanup(node):

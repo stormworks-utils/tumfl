@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from logging import warning
 from typing import Optional
 
 from tumfl.AST import (
@@ -11,15 +14,16 @@ from tumfl.AST import (
     FunctionDefinition,
     If,
     LocalFunctionDefinition,
+    Name,
     Number,
     Semicolon,
     UnaryOperand,
     UnOp,
-    Name,
 )
 from tumfl.basic_walker import AggregatingWalker, NoneWalker
-from .util.variable import Variable
+
 from .util.remove_name import RemoveName
+from .util.variable import Variable
 
 
 class ReplaceName(NoneWalker):
@@ -119,10 +123,14 @@ class Simplify(NoneWalker):
                 definition,
                 (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition),
             ):
-                warn
-            if all(
-                isinstance(child, Semicolon) for child in definition.body.statements
-            ) and not definition.body.returns:
+                warning(f"Function call {node} is not a function definition")
+                return
+            if (
+                all(
+                    isinstance(child, Semicolon) for child in definition.body.statements
+                )
+                and not definition.body.returns
+            ):
                 self.remove_name(node)
                 node.remove()
                 if len(var.reads) == 0:
