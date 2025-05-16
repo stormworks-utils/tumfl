@@ -115,4 +115,6 @@ class ASTNode(ABC):
         return self.attributes.get(key)
 
     def __hash__(self) -> int:
-        return hash(getattr(self, name) for name in self.__dir() if not callable(getattr(self, name)))
+        return hash(
+            val for name in self.__dir() if not callable(val := getattr(self, name))
+        )

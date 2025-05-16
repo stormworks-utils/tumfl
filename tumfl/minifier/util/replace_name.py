@@ -17,7 +17,7 @@ from tumfl.AST import (
 )
 
 if TYPE_CHECKING:
-    from tumfl.minifier.util.replacements import Replacements, ReplacementCollection
+    from tumfl.minifier.util.replacements import ReplacementCollection, Replacements
 
 
 def inner_add_alias(
