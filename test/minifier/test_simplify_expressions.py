@@ -1,8 +1,13 @@
 import unittest
 
-from tumfl import parse
+from tumfl import parse, format
 from tumfl.minifier.shorten_names import GetNames
 from tumfl.minifier.simplify_expressions import Simplify
+from tumfl.formatter import FormattingStyle
+
+
+class HereComment(FormattingStyle):
+    INCLUDE_COMMENTS = False
 
 
 class BaseClass(unittest.TestCase):
@@ -10,10 +15,11 @@ class BaseClass(unittest.TestCase):
         ast = parse(code)
         GetNames()(ast)
         Simplify()(ast)
-        self.assertEqual(ast, parse(expected))
+        self.assertMultiLineEqual(format(ast, HereComment), format(parse(expected), HereComment))
 
 
 class TestInlineFunction(BaseClass):
+
     def test_2_reads(self):
         code = """
         function test(a, b)
@@ -107,49 +113,22 @@ class TestUnOp(BaseClass):
         """
         self.compare_code(code, expected)
 
+    def compare_not_operators(self, operator_a: str, operator_b: str):
+        code = f"""
+        a = not (a {operator_a} b)
+        """
+        expected = f"""
+        a = a {operator_b} b
+        """
+        self.compare_code(code, expected)
+
     def test_not_comparison(self):
-        code = """
-        a = not (a == b)
-        """
-        expected = """
-        a = a ~= b
-        """
-        self.compare_code(code, expected)
-        code = """
-        a = not (a ~= b)
-        """
-        expected = """
-        a = a == b
-        """
-        self.compare_code(code, expected)
-        code = """
-        a = not (a > b)
-        """
-        expected = """
-        a = a <= b
-        """
-        self.compare_code(code, expected)
-        code = """
-        a = not (a >= b)
-        """
-        expected = """
-        a = a < b
-        """
-        self.compare_code(code, expected)
-        code = """
-        a = not (a < b)
-        """
-        expected = """
-        a = a >= b
-        """
-        self.compare_code(code, expected)
-        code = """
-        a = not (a <= b)
-        """
-        expected = """
-        a = a > b
-        """
-        self.compare_code(code, expected)
+        self.compare_not_operators("==", "~=")
+        self.compare_not_operators("~=", "==")
+        self.compare_not_operators(">", "<=")
+        self.compare_not_operators(">=", "<")
+        self.compare_not_operators("<", ">=")
+        self.compare_not_operators("<=", ">")
 
 
 if __name__ == "__main__":
