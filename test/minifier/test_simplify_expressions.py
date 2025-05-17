@@ -89,11 +89,9 @@ class TestInlineFunction(BaseClass):
         function test(a,b)
         end
         test(1,2)
+        test(1,2)
         """
-        expected = """
-        ;
-        ;
-        """
+        expected = "; ; ;"
         self.compare_code(code, expected)
 
     def test_correct_names(self):
@@ -142,19 +140,29 @@ class TestUnOp(BaseClass):
     def test_negative(self):
         code = """
         a = - - 1
+        a = - 1
+        a = - - - 1
+        a = - - .5
+        a = - (a - b)
+        a = - (a + b)
         """
         expected = """
         a = 1
+        a = - 1
+        a = - 1
+        a = .5
+        a = a + b
+        a = a - b
         """
         self.compare_code(code, expected)
+        code = "a = - (#a)"
+        self.compare_code(code, code)
+        code = "a = - (a and b)"
+        self.compare_code(code, code)
 
     def compare_not_operators(self, operator_a: str, operator_b: str):
-        code = f"""
-        a = not (a {operator_a} b)
-        """
-        expected = f"""
-        a = a {operator_b} b
-        """
+        code = f"a = not (a {operator_a} b)"
+        expected = f"a = a {operator_b} b"
         self.compare_code(code, expected)
 
     def test_not_comparison(self):
@@ -164,6 +172,76 @@ class TestUnOp(BaseClass):
         self.compare_not_operators(">=", "<")
         self.compare_not_operators("<", ">=")
         self.compare_not_operators("<=", ">")
+        code = "a = not (a and b)"
+        self.compare_code(code, code)
+        code = "a = not (#a)"
+        self.compare_code(code, code)
+
+    def test_else(self):
+        code = "a = #foo"
+        self.compare_code(code, code)
+
+
+class TestIf(BaseClass):
+    def test_normal(self):
+        code = """
+        if a then
+            b = 1
+        else
+            b = 2
+        end
+        """
+        self.compare_code(code, code)
+
+    def test_both_full(self):
+        code = """
+        if true then
+            foo = bar
+        else
+            bar = foo
+        end
+        """
+        expected = """
+        do
+            foo = bar
+        end
+        """
+        self.compare_code(code, expected)
+        code = """
+        if false then
+            foo = bar
+        else
+            bar = foo
+        end
+        """
+        expected = """
+        do
+            bar = foo
+        end
+        """
+        self.compare_code(code, expected)
+
+    def test_half_empty(self):
+        code = """
+        if true then
+            foo = bar
+        else
+            bar = foo
+        end
+        """
+        expected = """
+        do
+            foo = bar
+        end
+        """
+        self.compare_code(code, expected)
+        code = """
+        if false then
+            foo = bar
+        end
+        """
+        expected = ";"
+        self.compare_code(code, expected)
 
 
 if __name__ == "__main__":
