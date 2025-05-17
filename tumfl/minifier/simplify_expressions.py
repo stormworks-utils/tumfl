@@ -127,6 +127,8 @@ class Simplify(NoneWalker):
                 node.replace(node.true)
             elif node.false:
                 node.replace(node.false)
+            else:
+                node.remove()
 
     def visit_FunctionCall(self, node: FunctionCall) -> None:
         super().visit_FunctionCall(node)
