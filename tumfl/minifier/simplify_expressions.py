@@ -45,7 +45,7 @@ class ReplaceName(NoneWalker):
                 and node is not parent.function
             ):
                 return
-            elif isinstance(parent, NamedTableField) and node is not parent.value:
+            if isinstance(parent, NamedTableField) and node is not parent.value:
                 return
             node.replace(self.replacements[node])
 
