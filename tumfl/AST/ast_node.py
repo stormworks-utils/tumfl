@@ -115,5 +115,7 @@ class ASTNode(ABC):
 
     def __hash__(self) -> int:
         return hash(
-            val for name in self.__dir() if not callable(val := getattr(self, name))
+            tuple(
+                var for name in self.__dir() if not callable(var := getattr(self, name))
+            )
         )
