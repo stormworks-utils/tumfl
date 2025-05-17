@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABC
 from pathlib import Path
 from typing import Any, Generator, Optional, Type, TypeVar
-from weakref import ReferenceType, ref
 
 from tumfl.Token import Token
 from tumfl.utils import generic_str
