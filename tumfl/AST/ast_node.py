@@ -17,17 +17,17 @@ class ASTNode(ABC):
     def __init__(self, token: Token, name: str) -> None:
         self.name: str = name
         self.token: Token = token
-        self._parent_class: Optional[ReferenceType[ASTNode]] = None
+        self._parent_class: Optional[ASTNode] = None
         self.file_name: Optional[Path] = None
         self.attributes: dict[Type[Any], Any] = {}
 
     @property
     def parent_class(self) -> Optional[ASTNode]:
-        return None if self._parent_class is None else self._parent_class()
+        return self._parent_class
 
     @parent_class.setter
     def parent_class(self, value: Optional[ASTNode]) -> None:
-        self._parent_class = ref(value) if value is not None else None
+        self._parent_class = value
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
