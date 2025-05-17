@@ -1,9 +1,9 @@
 import unittest
 
-from tumfl import parse, format
+from tumfl import format, parse
+from tumfl.formatter import FormattingStyle
 from tumfl.minifier.shorten_names import GetNames
 from tumfl.minifier.simplify_expressions import Simplify
-from tumfl.formatter import FormattingStyle
 
 
 class HereComment(FormattingStyle):
@@ -15,7 +15,9 @@ class BaseClass(unittest.TestCase):
         ast = parse(code)
         GetNames()(ast)
         Simplify()(ast)
-        self.assertMultiLineEqual(format(ast, HereComment), format(parse(expected), HereComment))
+        self.assertMultiLineEqual(
+            format(ast, HereComment), format(parse(expected), HereComment)
+        )
 
 
 class TestInlineFunction(BaseClass):
