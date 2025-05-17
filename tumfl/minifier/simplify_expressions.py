@@ -137,7 +137,9 @@ class Simplify(NoneWalker):
                 definition,
                 (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition),
             ):
-                warning(f"Function call {node} is not a function definition")
+                warning(
+                    f'Function call to "{node.function!s}" is not a function definition'
+                )
                 return
             if (
                 all(
