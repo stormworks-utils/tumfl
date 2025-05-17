@@ -10,11 +10,15 @@ from tumfl.AST import (
     Block,
     Boolean,
     ExpFunctionDefinition,
+    ExpMethodInvocation,
     FunctionCall,
     FunctionDefinition,
     If,
     LocalFunctionDefinition,
+    MethodInvocation,
     Name,
+    NamedIndex,
+    NamedTableField,
     Number,
     Semicolon,
     UnaryOperand,
@@ -33,9 +37,17 @@ class ReplaceName(NoneWalker):
 
     def visit_Name(self, node: Name) -> None:
         if node in self.replacements:
+            parent: Optional[ASTNode] = node.parent_class
+            if isinstance(parent, NamedIndex) and node is not parent.lhs:
+                return
+            if (
+                isinstance(parent, (MethodInvocation, ExpMethodInvocation))
+                and node is not parent.function
+            ):
+                return
+            elif isinstance(parent, NamedTableField) and node is not parent.value:
+                return
             node.replace(self.replacements[node])
-        else:
-            super().visit_Name(node)
 
 
 class HasReturn(AggregatingWalker[bool]):

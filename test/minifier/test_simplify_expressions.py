@@ -8,6 +8,7 @@ from tumfl.minifier.simplify_expressions import Simplify
 
 class HereComment(FormattingStyle):
     INCLUDE_COMMENTS = False
+    KEEP_SEMICOLON = True
 
 
 class BaseClass(unittest.TestCase):
@@ -94,6 +95,38 @@ class TestInlineFunction(BaseClass):
         ;
         """
         self.compare_code(code, expected)
+
+    def test_correct_names(self):
+        code = """
+        function test(a, b)
+            foo = a.a + b
+            a.a(foo)
+            foo = {a = a, b = b, [a] = a, b}
+            a:a(foo)
+            foo = a:a(foo)
+        end
+        c, d = 1, 2
+        test(c, d)
+        """
+        expected = """
+        ; -- residual function
+        c, d = 1, 2
+        do
+            foo = c.a + d
+            c.a(foo)
+            foo = {a = c, b = d, [c] = c, d}
+            c:a(foo)
+            foo = c:a(foo)
+        end
+        """
+        self.compare_code(code, expected)
+
+    def test_not_a_function(self):
+        code = """
+        a = 2
+        a()
+        """
+        self.compare_code(code, code)
 
 
 class TestUnOp(BaseClass):
