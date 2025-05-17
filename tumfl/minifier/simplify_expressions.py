@@ -88,6 +88,8 @@ class Simplify(NoneWalker):
                 if new_op is not None:
                     node.right.op = new_op
                     node.replace(node.right)
+            elif isinstance(node.right, UnOp) and node.right.op == UnaryOperand.NOT:
+                node.replace(node.right.right)
         elif node.op == UnaryOperand.MINUS:
             if isinstance(node.right, Number):
                 if not node.right.integer_part:

@@ -5,13 +5,15 @@ from tumfl.minifier.shorten_names import GetNames
 from tumfl.minifier.simplify_expressions import Simplify
 
 
-class TestInlineFunction(unittest.TestCase):
+class BaseClass(unittest.TestCase):
     def compare_code(self, code: str, expected: str):
         ast = parse(code)
         GetNames()(ast)
         Simplify()(ast)
         self.assertEqual(ast, parse(expected))
 
+
+class TestInlineFunction(BaseClass):
     def test_2_reads(self):
         code = """
         function test(a, b)
@@ -82,6 +84,70 @@ class TestInlineFunction(unittest.TestCase):
         expected = """
         ;
         ;
+        """
+        self.compare_code(code, expected)
+
+
+class TestUnOp(BaseClass):
+    def test_not(self):
+        code = """
+        a = not not 1
+        """
+        expected = """
+        a = 1
+        """
+        self.compare_code(code, expected)
+
+    def test_negative(self):
+        code = """
+        a = - - 1
+        """
+        expected = """
+        a = 1
+        """
+        self.compare_code(code, expected)
+
+    def test_not_comparison(self):
+        code = """
+        a = not (a == b)
+        """
+        expected = """
+        a = a ~= b
+        """
+        self.compare_code(code, expected)
+        code = """
+        a = not (a ~= b)
+        """
+        expected = """
+        a = a == b
+        """
+        self.compare_code(code, expected)
+        code = """
+        a = not (a > b)
+        """
+        expected = """
+        a = a <= b
+        """
+        self.compare_code(code, expected)
+        code = """
+        a = not (a >= b)
+        """
+        expected = """
+        a = a < b
+        """
+        self.compare_code(code, expected)
+        code = """
+        a = not (a < b)
+        """
+        expected = """
+        a = a >= b
+        """
+        self.compare_code(code, expected)
+        code = """
+        a = not (a <= b)
+        """
+        expected = """
+        a = a > b
         """
         self.compare_code(code, expected)
 
