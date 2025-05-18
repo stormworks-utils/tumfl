@@ -63,6 +63,7 @@ class TestTable(BaseClass):
         self.run_test("{1, 2, a = 3}", {1: 1, 2: 2, "a": 3})
         self.run_test("{1, 2, 3, [4] = 4}", [1, 2, 3, 4])
         self.run_test("{1, 2, [5] = 5}", {1: 1, 2: 2, 5: 5})
+        self.run_test("{[0] = 1, 1, 2}", {0: 1, 1: 1, 2: 2})
 
     def test_explicit_field(self):
         self.run_test('{["foo"] = 1, [2] = 2}', {"foo": 1, 2: 2})
