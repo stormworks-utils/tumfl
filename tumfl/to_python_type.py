@@ -111,7 +111,8 @@ class ToPythonType(BasicWalker[Retype]):
         # pylint: disable=consider-iterating-dictionary
         if len(results) > 0 and all(isinstance(val, int) for val in results.keys()):
             max_key: int = max(results.keys())  # type: ignore
-            if all(key in results for key in range(1, max_key + 1)):
+            min_key: int = min(results.keys())  #type: ignore
+            if min_key == 1 and all(key in results for key in range(1, max_key + 1)):
                 return [results[key] for key in range(1, max_key + 1)]
         return results
 
