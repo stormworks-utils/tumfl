@@ -19,7 +19,7 @@ from .AST import (
 from .basic_walker import NoneWalker
 from .error import InvalidDependencyError
 from .parser import parse
-from .Token import Token, TokenType
+from .Token import Token
 
 if TYPE_CHECKING:
     from .config import Config
@@ -46,10 +46,6 @@ class ResolveDependencies(NoneWalker):
         self.found: dict[Path, Optional[list[Name]]] = {}
         self.add_source_description: bool = add_source_description
         self.config: Optional[Config] = config
-
-    @staticmethod
-    def _str_to_name(name: str) -> Name:
-        return Name.from_token(Token(TokenType.NAME, name, 0, 0))
 
     def _find_file_in_path(self, name: str, start_path: Path) -> Optional[Path]:
         parts: list[str] = name.split(".")
@@ -152,13 +148,16 @@ class ResolveDependencies(NoneWalker):
         # if the body is expecting a return value, never deduplicate
         if ast := self.__get_ast(node, deduplicate=False):
             # since deduplication is off, ast will never be a Semicolon
-            assert isinstance(ast, Chunk)
+            assert isinstance(ast, Block)
             function = ExpFunctionDefinition(node.token, [], ast)
             node.function = function
             ast.parent_class = function
-            ast.file_name = node.file_name
-            function.parent_class = node
-            self.visit(function)
+            call = ExpFunctionCall(node.token, function, [])
+            function.parent_class = call
+            call.parent_class = node.parent_class
+            ast.file_name = function.file_name = call.file_name = node.file_name
+            node.replace(call)
+            self.visit(call)
         else:
             super().visit_ExpFunctionCall(node)
 

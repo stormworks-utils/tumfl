@@ -1,0 +1,1 @@
+foo = require("require_expr_test")
