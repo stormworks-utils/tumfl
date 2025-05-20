@@ -1,0 +1,1 @@
+a, b = "$$config_value", "$$other_config_value"
