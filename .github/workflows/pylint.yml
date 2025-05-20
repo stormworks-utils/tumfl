@@ -34,4 +34,5 @@ jobs:
       run: black --check .
     - name: Run pylint
       run: pylint tumfl
-
+    - name: Run tests
+      run: python -m unittest discover
