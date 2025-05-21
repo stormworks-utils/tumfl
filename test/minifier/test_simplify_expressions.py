@@ -55,7 +55,14 @@ class TestInlineFunction(BaseClass):
         a = 1
         test(a, 2)
         """
-        self.compare_code(code, code)
+        expected = """
+        ;
+        a = 1
+        (function (a, b)
+            foo = a + b
+        end)(a,2)
+        """
+        self.compare_code(code, expected)
 
     def test_has_return(self):
         code = """
@@ -65,7 +72,14 @@ class TestInlineFunction(BaseClass):
         a, b = 1, 2
         test(a, b)
         """
-        self.compare_code(code, code)
+        expected = """
+        ;
+        a, b = 1, 2
+        (function (a, b)
+            return a + b
+        end)(a,b)
+        """
+        self.compare_code(code, expected)
 
     def test_allowed(self):
         code = """
@@ -130,27 +144,27 @@ class TestInlineFunction(BaseClass):
 class TestUnOp(BaseClass):
     def test_not(self):
         code = """
-        a = not not 1
+        a = not not foo
         """
         expected = """
-        a = 1
+        a = foo
         """
         self.compare_code(code, expected)
 
     def test_negative(self):
         code = """
-        a = - - 1
-        a = - 1
-        a = - - - 1
-        a = - - .5
+        a = - - a
+        a = - a
+        a = - - - a
+        a = - - -1
         a = - (a - b)
         a = - (a + b)
         """
         expected = """
-        a = 1
-        a = - 1
-        a = - 1
-        a = .5
+        a = a
+        a = - a
+        a = - a
+        a = -1
         a = a + b
         a = a - b
         """
@@ -241,6 +255,23 @@ class TestIf(BaseClass):
         end
         """
         expected = ";"
+        self.compare_code(code, expected)
+
+
+class TestBinOp(BaseClass):
+    def test_plus(self):
+        code = """
+        a = 1 + 2
+        a = 1 * 2
+        a = 1^5
+        a = 1 ~= 2
+        """
+        expected = """
+        a = 3
+        a = 2
+        a = 1.0
+        a = true
+        """
         self.compare_code(code, expected)
 
 
