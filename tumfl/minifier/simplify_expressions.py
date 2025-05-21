@@ -9,6 +9,7 @@ from tumfl.AST import (
     BinOp,
     Block,
     Boolean,
+    ExpFunctionCall,
     ExpFunctionDefinition,
     ExpMethodInvocation,
     FunctionCall,
@@ -19,13 +20,14 @@ from tumfl.AST import (
     Name,
     NamedIndex,
     NamedTableField,
-    Number,
     Semicolon,
     UnaryOperand,
     UnOp,
 )
 from tumfl.basic_walker import AggregatingWalker, NoneWalker
 
+from ..to_lua_type import to_lua_type
+from ..to_python_type import ToPythonType
 from .util.remove_name import RemoveName
 from .util.variable import Variable
 
@@ -66,23 +68,20 @@ class Simplify(NoneWalker):
         super().__init__()
         self.has_return = HasReturn()
         self.remove_name = RemoveName()
+        self.to_python = ToPythonType()
 
     def visit_BinOp(self, node: BinOp) -> None:
         super().visit_BinOp(node)
-        if isinstance(node.left, Number) and isinstance(node.right, Number):
-            left_num: str = str(node.left.to_int() or node.left.to_float())
-            right_num: str = str(node.right.to_int() or node.right.to_float())
-            op: str = node.op.value.replace("^", "**").replace("~=", "!=")
-            # pylint: disable=eval-used
-            result = str(eval(f"{left_num} {op} {right_num}"))
-            new_node = Number(node.token, False, result.split(".", maxsplit=1)[0])
-            if "." in result:
-                new_node.fractional_part = result.split(".")[1]
-            node.replace(new_node)
+        if (result := self.to_python.visit(node)) is not None:
+            as_lua = to_lua_type(result)
+            node.replace(as_lua)
 
     def visit_UnOp(self, node: UnOp) -> None:
         super().visit_UnOp(node)
-        if node.op == UnaryOperand.NOT:
+        if (result := self.to_python.visit(node)) is not None:
+            as_lua = to_lua_type(result)
+            node.replace(as_lua)
+        elif node.op == UnaryOperand.NOT:
             if isinstance(node.right, BinOp):
                 new_op: Optional[BinaryOperand] = None
                 if node.right.op == BinaryOperand.EQUALS:
@@ -103,15 +102,7 @@ class Simplify(NoneWalker):
             elif isinstance(node.right, UnOp) and node.right.op == UnaryOperand.NOT:
                 node.replace(node.right.right)
         elif node.op == UnaryOperand.MINUS:
-            if isinstance(node.right, Number):
-                if not node.right.integer_part:
-                    node.right.integer_part = "-"
-                elif node.right.integer_part.startswith("-"):
-                    node.right.integer_part = node.right.integer_part[1:]
-                else:
-                    node.right.integer_part = "-" + node.right.integer_part
-                node.replace(node.right)
-            elif isinstance(node.right, BinOp):
+            if isinstance(node.right, BinOp):
                 if node.right.op in (BinaryOperand.PLUS, BinaryOperand.MINUS):
                     node.right.op = (
                         BinaryOperand.MINUS
@@ -119,6 +110,9 @@ class Simplify(NoneWalker):
                         else BinaryOperand.PLUS
                     )
                     node.replace(node.right)
+            elif isinstance(node.right, UnOp):
+                if node.right.op == UnaryOperand.MINUS:
+                    node.replace(node.right.right)
 
     def visit_If(self, node: If) -> None:
         super().visit_If(node)
@@ -167,4 +161,16 @@ class Simplify(NoneWalker):
                     replacements[arg] = value
                 ReplaceName(replacements).visit(definition.body)
                 node.replace(definition.body)
+                definition.remove()
+            elif len(var.reads) == 1:
+                # Replaces a function call with an inline function definition, and finally a call
+                # While this still involves the `function` keyword, it only requires a set of parantheses
+                # (function(params)body end)(), instead of a name (necessarily a split from the keyword)
+                # and potentially spaces before and after the definition
+                function = ExpFunctionDefinition(
+                    node.token, definition.parameters, definition.body
+                )
+                call = ExpFunctionCall(node.token, function, node.arguments)
+                function.parent_class = call
+                node.replace(call)
                 definition.remove()
