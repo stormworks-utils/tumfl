@@ -30,16 +30,26 @@ def inner_add_alias(
     assert current.replacement
     assert current.original
     token = current.original.token
-    replacements: list[Replacements] = [current]
-    while replacements[0].parent is not None:
-        replacements.insert(0, replacements[0].parent)
-    names: list[Name] = [replacement.targets[0] for replacement in replacements]
+    names: list[Name] = [current.original]
+    todo: Name = names[0]
+    while (
+        isinstance(todo.parent_class, NamedIndex)
+        and todo.parent_class.lhs is not names[0]
+    ):
+        if isinstance(todo.parent_class.lhs, NamedIndex):
+            names.insert(0, todo.parent_class.lhs.variable_name)
+        else:
+            assert isinstance(todo.parent_class.lhs, Name)
+            names.insert(0, todo.parent_class.lhs)
+        todo = names[0]
     parent_idx: int = -1
     if current.parent is not None:
         for i, name in enumerate(names):
             if name in current.parent.targets:
                 parent_idx = i
                 break
+        else:
+            assert False, "Parent is set, but unable to find it in names"
     names = [name if i <= parent_idx else name.clone() for i, name in enumerate(names)]
     node: Expression = names.pop(0)
     for name in names:
