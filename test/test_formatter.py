@@ -30,10 +30,14 @@ class TestFormatter(unittest.TestCase):
     def test_format_comment(self):
         expected = ["-- comment", Separators.Newline]
         self.assertEqual(self.normal._format_comment("comment"), expected)
+        expected = ["--- comment", Separators.Newline]
+        self.assertEqual(self.normal._format_comment("-comment"), expected)
         expected = ["--comment", Separators.Newline]
         self.assertEqual(self.minified._format_comment("comment"), expected)
         expected = ["--[[ab\ncd]]", Separators.Statement]
         self.assertEqual(self.normal._format_comment("ab\ncd"), expected)
+        expected = ["---[[ab\ncd]]", Separators.Statement]
+        self.assertEqual(self.normal._format_comment("-ab\ncd"), expected)
         expected = ["--[==[[[=[\na]==]", Separators.Statement]
         self.assertEqual(self.normal._format_comment("[[=[\na"), expected)
 
