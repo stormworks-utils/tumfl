@@ -8,6 +8,8 @@ from typing import Optional
 from watchdog.events import EVENT_TYPE_CLOSED, FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
+from tumfl.formatter import MinifiedStyle
+
 try:
     from watchdog.events import EVENT_TYPE_OPENED
 except ImportError:
@@ -38,6 +40,7 @@ def compile_file(filename: Path, config: Config, minify: bool) -> str:
     )
     if minify:
         minifier.minify(result)
+        return format(result, MinifiedStyle)
     return format(result)
 
 
