@@ -123,11 +123,14 @@ class Formatter(BasicWalker[Retype]):
 
     def _format_comment(self, comment: str, force_long: bool = False) -> Retype:
         comment = comment.strip()
-        prefix: str = "-" if comment and comment[0] == '-' else ''
-        comment = comment.lstrip('-')
+        prefix: str = "-" if comment and comment[0] == "-" else ""
+        comment = comment.lstrip("-")
         if force_long or "\n" in comment:
             level: int = self._find_level(comment)
-            return [f"--{prefix}[{'=' * level}[{comment}]{'=' * level}]", Separators.Statement]
+            return [
+                f"--{prefix}[{'=' * level}[{comment}]{'=' * level}]",
+                Separators.Statement,
+            ]
         return [f"--{prefix}{self.s.COMMENT_SEP}{comment}", Separators.Newline]
 
     def _format_function_args(self, args: Sequence[Expression]) -> Retype:
