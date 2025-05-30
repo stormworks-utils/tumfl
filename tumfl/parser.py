@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from typing import Callable, NoReturn, Optional
 
 from .AST import *
@@ -15,8 +14,20 @@ class Hint:
         self.where: str = where
         self.what: str = what
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Hint):
+            return False
+        return (
+            self.token == other.token
+            and self.where == other.where
+            and self.what == other.what
+        )
+
     def __str__(self) -> str:
         return f"<{self.where}> {self.what} ({self.token.line}:{self.token.column})"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class Parser:
@@ -34,30 +45,25 @@ class Parser:
     ):
         self.chunk: str = chunk
         self.lexer: Lexer = Lexer(self.chunk, typed, ignore_unicode_errors)
-        self.pos: int = 0
         self.current_token: Token = self.lexer.get_next_token()
         self.next_token: Token = self.lexer.get_next_token()
         self.context_hints: list[Hint] = []
-        self.typed: bool = typed
 
     def _error(self, message: str, token: Token) -> NoReturn:
         """Throw an error, prints out a description, and finally throws a value error"""
         current_line: int = token.line
         current_column = token.column
-        print(f"Error on line {current_line}:", file=sys.stderr)
-        lines: list[str] = self.chunk.split("\n")
+        full_error: str = f"Error on line {current_line}:\n"
+        lines: list[str] = self.chunk.split("\n")  # pragma: no mutate
         if current_line > 1:
-            print(lines[current_line - 2], file=sys.stderr)
-        print(lines[current_line - 1], file=sys.stderr)
-        print(" " * (current_column - 1) + "^", file=sys.stderr)
-        print(message, file=sys.stderr)
+            full_error += lines[current_line - 2] + "\n"
+        full_error += lines[current_line - 1] + "\n"
+        full_error += " " * (current_column - 1) + "^\n"
+        full_error += message + "\n"
         if self.context_hints:
-            print(
-                "hints:",
-                " -> ".join(str(hint) for hint in self.context_hints),
-                file=sys.stderr,
-            )
-        raise ParserError(message, self.context_hints, token)
+            full_error += "hints: "
+            full_error += " -> ".join(str(hint) for hint in self.context_hints) + "\n"
+        raise ParserError(message, self.context_hints, token, full_error)
 
     def _assert(self, token_type: TokenType) -> None:
         """Assert that the current token is of a certain kind"""
@@ -68,13 +74,12 @@ class Parser:
         """Eats a specific token and throws an error, if the wrong token is found"""
         if token_type:
             self._assert(token_type)
-        self.pos += 1
         self.current_token = self.next_token
         self.next_token = self.lexer.get_next_token()
 
-    def _add_hint(self, where: str, what: str) -> None:
+    def _add_hint(self, where: str, what: str, token: Optional[Token] = None) -> None:
         """Add a context hint for error messages"""
-        self.context_hints.append(Hint(self.current_token, where, what))
+        self.context_hints.append(Hint(token or self.current_token, where, what))
 
     def _remove_hint(self) -> None:
         """Remove a context hint for error messages"""
@@ -104,7 +109,7 @@ class Parser:
         while self.current_token.type not in self._BLOCK_END_TYPES:
             block.statements.append(self._parse_statement())
         if self.current_token.type == TokenType.RETURN:
-            self._eat_token(TokenType.RETURN)
+            self._eat_token()
             block.returns = []
             if (
                 self.current_token.type
@@ -260,9 +265,6 @@ class Parser:
             else_block = self._parse_block(block_token)
         self._eat_token(TokenType.END)
         self._remove_hint()
-        assert len(elseif_conditions) == len(elseif_blocks) and len(
-            elseif_blocks
-        ) == len(elseif_tokens)
         current_if: Optional[If | Block] = else_block
         for i in range(len(elseif_conditions) - 1, -1, -1):
             elseif_blocks[i].comment.extend(if_token.comment)
@@ -286,7 +288,7 @@ class Parser:
             return self._parse_numeric_for(for_token, first_name)
         if self.current_token.type in (TokenType.COMMA, TokenType.IN):
             return self._parse_iterative_for(for_token, first_name)
-        self._error("unexpected for condition", self.current_token)
+        self._error("Unexpected for condition", self.current_token)
 
     def _parse_numeric_for(self, for_token: Token, name: Name) -> NumericFor:
         """
@@ -365,11 +367,9 @@ class Parser:
         if self.current_token.type == TokenType.NAME:
             parameters.extend(self._parse_name_list(leave_vararg=True))
             if self.current_token.type == TokenType.ELLIPSIS:  # type: ignore
-                self._switch_hint("varargs")
                 parameters.append(Vararg.from_token(self.current_token))
                 self._eat_token()
         elif self.current_token.type == TokenType.ELLIPSIS:
-            self._switch_hint("varargs")
             parameters.append(Vararg.from_token(self.current_token))
             self._eat_token()
         block_token: Token = self.current_token
@@ -487,7 +487,7 @@ class Parser:
             )
         if isinstance(first_var, Name):
             self._error("Unexpected lonely name", self.current_token)
-        assert False, "unreachable line"
+        assert False, "unreachable line"  # pragma: no mutate
 
     def _parse_assignment(self, first_token: Token, first_var: Expression) -> Assign:
         """
@@ -620,7 +620,7 @@ class Parser:
         concat_exp: add_exp {CONCAT add_exp}
         """
         return self.__parse_right_associative_binop(
-            TokenType.CONCAT, self._parse_add_exp, self._parse_concat_exp
+            TokenType.CONCAT, self._parse_add_exp, self._parse_add_exp
         )
 
     def _parse_add_exp(self) -> Expression:
@@ -703,7 +703,7 @@ class Parser:
             return Vararg.from_token(token)
         if token.type == TokenType.FUNCTION:
             function_token: Token = self.current_token
-            self._add_hint("function expression", "definition")
+            self._add_hint("function expression", "definition")  # pragma: no mutate
             self._eat_token()
             base_function: BaseFunctionDefinition = self._parse_funcbody(function_token)
             return ExpFunctionDefinition.from_base_definition(base_function)
@@ -744,18 +744,20 @@ class Parser:
         var: Name | L_PAREN exp R_PAREN
         """
         var: Expression
+        remove_hint: bool = False  # pragma: no mutate
         if self.current_token.type == TokenType.NAME:
-            self._add_hint("named var", "name")
             var = self.__eat_name()
         elif self.current_token.type == TokenType.L_PAREN:
             self._add_hint("expression var", "expression")
+            remove_hint = True
             self._eat_token()
             var = self._parse_exp()
             self._eat_token(TokenType.R_PAREN)
         else:
-            assert False
+            self._error("Unexpected variable", self.current_token)
         var = self._parse_or_ignore_var_terminal(var)
-        self._remove_hint()
+        if remove_hint:
+            self._remove_hint()
         return var
 
     def _parse_or_ignore_var_terminal(self, base_var: Expression) -> Expression:
@@ -783,31 +785,35 @@ class Parser:
         token: Token = self.current_token
         var: Expression
         name: Name
-        match token.type:
+        remove_hint: bool = False  # pragma: no mutate
+        match token.type:  # pragma: no mutate
             case TokenType.L_PAREN | TokenType.L_CURL | TokenType.STRING:
-                self._add_hint("function", "arguments")
                 var = ExpFunctionCall(token, base_var, self._parse_args())
             case TokenType.COLON:
                 self._add_hint("invocation", "name")
+                remove_hint = True
                 self._eat_token()
                 name = self.__eat_name()
                 args: list[Expression] = self._parse_args()
                 var = ExpMethodInvocation(token, base_var, name, args)
             case TokenType.L_BRACKET:
                 self._add_hint("index", "expression")
+                remove_hint = True
                 self._eat_token()
                 expr: Expression = self._parse_exp()
                 self._eat_token(TokenType.R_BRACKET)
                 var = Index(token, base_var, expr)
             case TokenType.DOT:
                 self._add_hint("index", "name")
+                remove_hint = True
                 self._eat_token()
                 name = self.__eat_name()
                 var = NamedIndex(token, base_var, name)
             case _:  # pragma: no cover
-                assert False, "unreachable line"
+                assert False, "unreachable line"  # pragma: no mutate
         var = self._parse_or_ignore_var_terminal(var)
-        self._remove_hint()
+        if remove_hint:
+            self._remove_hint()
         return var
 
     def _parse_table_constructor(self) -> Table:
@@ -849,10 +855,9 @@ class Parser:
             self.current_token.type == TokenType.NAME
             and self.next_token.type == TokenType.ASSIGN
         ):
-            self._add_hint("named table field", "name")
+            self._add_hint("named table field", "value expression")
             name: Name = self.__eat_name()
-            self._switch_hint("value expression")
-            self._eat_token(TokenType.ASSIGN)
+            self._eat_token()
             value = self._parse_exp()
             self._remove_hint()
             return NamedTableField(token, name, value)
@@ -880,7 +885,7 @@ class Parser:
             expressions.append(String.from_token(self.current_token))
             self._eat_token()
         else:
-            assert False, "unreachable line"
+            assert False, "unreachable line"  # pragma: no mutate
         self._remove_hint()
         return expressions
 

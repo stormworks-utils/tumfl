@@ -13,7 +13,7 @@ try:
 except ImportError:
     EVENT_TYPE_OPENED = "opened"  # type: ignore
 
-from tumfl import format, minifier
+from tumfl import ParserError, format, minifier
 from tumfl.AST import ASTNode
 from tumfl.config import Config, parse_config
 from tumfl.dependency_resolver import resolve_recursive
@@ -51,7 +51,10 @@ def run(config: RunConfig) -> None:
     except RuntimeError:
         return
     except TumflError as e:
-        error(e)
+        if isinstance(e, ParserError):
+            error(e.full_error)
+        else:
+            error(e)
         return
     with config.destination.open("w") as f:
         f.write(compiled)
