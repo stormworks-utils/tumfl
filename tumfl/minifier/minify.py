@@ -1,4 +1,5 @@
 from tumfl.AST import ASTNode, Chunk
+from tumfl.minifier.block_optimization import Optimize
 from tumfl.minifier.resolve_indexes import Resolve
 from tumfl.minifier.shorten_names import GetNames, remove_unused_names
 from tumfl.minifier.simplify_expressions import Simplify
@@ -14,5 +15,6 @@ def minify(ast: ASTNode) -> None:
     assert isinstance(ast, Chunk)
     replacements = r.current_scope.collect_replacements()
     full_replace(ast, replacements)
+    Optimize()(ast)
     # CombineLocal()(ast) combine_local still contains flaws
     Simplify()(ast)
