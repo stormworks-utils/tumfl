@@ -9,8 +9,10 @@ from tumfl.AST import (
     Block,
     Boolean,
     Break,
+    ExpFunctionCall,
     ExplicitTableField,
     Goto,
+    Index,
     Label,
     LocalAssign,
     Name,
@@ -74,6 +76,12 @@ class ToPythonType(BasicWalker[Retype]):
         pass
 
     def visit_Semicolon(self, node: Semicolon) -> Retype:
+        pass
+
+    def visit_Index(self, node: Index) -> Retype:
+        pass
+
+    def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> Retype:
         pass
 
     def visit_Boolean(self, node: Boolean) -> Retype:

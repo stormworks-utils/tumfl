@@ -257,6 +257,13 @@ class TestBinOp(BaseClass):
         self.run_test("0 or {5}", 0)
         self.run_test("nil or {5}", [5])
 
+    def test_misc(self):
+        self.run_test("foo[1]", None)
+        self.run_test("(1)()", None)
+        self.run_test("function() return 1 end", None)
+        self.run_test("(1):foo()", None)
+        self.run_test("(1).bar", None)
+
 
 if __name__ == "__main__":
     unittest.main()
