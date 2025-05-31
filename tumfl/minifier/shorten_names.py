@@ -147,16 +147,25 @@ class GetNames(NoneWalker):
             self.read_var(node)
 
     def visit_Assign(self, node: Assign) -> None:
+        for expr in node.expressions:
+            self.visit(expr)
         self.set_preserve(node)
         for target in node.targets:
             self.add_var_opt(target, True)
         self.preserve = False
-        super().visit_Assign(node)
+        for target in node.targets:
+            self.visit(target)
 
     def visit_LocalAssign(self, node: LocalAssign) -> None:
+        if node.expressions:
+            for expr in node.expressions:
+                self.visit(expr)
         for name in node.variable_names:
             self.add_var_opt(name.name)
-        super().visit_LocalAssign(node)
+        for var in node.variable_names:
+            self.visit(var.name)
+            if var.attribute:
+                self.visit(var.attribute)
 
     def visit_IterativeFor(self, node: IterativeFor) -> None:
         self.push_outer_scope()

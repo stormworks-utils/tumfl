@@ -1,6 +1,6 @@
 import unittest
 
-from tumfl import minify, parse, format
+from tumfl import format, minify, parse
 
 
 class TestMinifier(unittest.TestCase):
@@ -16,13 +16,35 @@ class TestMinifier(unittest.TestCase):
         minify(ast)
         formatted_code = format(ast)
         expected_code = """
+        local b, c
         a = foo.bar
-        local b = a()
-        local c = a()
+        b = a()
+        c = a()
         a(b, c)
         """
-        self.assertEqual(formatted_code, format(parse(expected_code)))
+        self.assertMultiLineEqual(formatted_code, format(parse(expected_code)))
+
+    def test_local_assign(self):
+        code = """
+        b = 2
+        local a = 1
+        local b = b
+        local c = a + b
+        foo(c)
+        """
+        ast = parse(code)
+        minify(ast)
+        formatted_code = format(ast)
+        expected_code = """
+        local b, c, d
+        a = 2
+        b = 1
+        c = a
+        d = b + c
+        foo(d)
+        """
+        self.assertMultiLineEqual(formatted_code, format(parse(expected_code)))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
