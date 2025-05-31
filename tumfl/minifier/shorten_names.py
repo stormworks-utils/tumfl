@@ -157,6 +157,7 @@ class GetNames(NoneWalker):
             self.visit(target)
 
     def visit_LocalAssign(self, node: LocalAssign) -> None:
+        # pylint: disable=duplicate-code
         if node.expressions:
             for expr in node.expressions:
                 self.visit(expr)

@@ -1,6 +1,8 @@
-from tumfl import parse, format
-from tumfl.minifier.block_optimization import Optimize
 import unittest
+
+from tumfl import format, parse
+from tumfl.minifier.block_optimization import Optimize
+
 
 class TestBlockOptimization(unittest.TestCase):
     def run_test(self, code: str, expected: str):
