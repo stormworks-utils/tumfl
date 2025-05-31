@@ -37,7 +37,7 @@ class Variable:
         if isinstance(parent, NamedIndex) and name is parent.variable_name:
             for i, other_scope in enumerate(self.scopes):
                 if name is other_scope[1]:
-                    for own in (self.reads + self.writes):
+                    for own in self.reads + self.writes:
                         if own == name and own is not name:
                             self.scopes[i] = (other_scope[0], own)
                             break
@@ -125,7 +125,14 @@ class Variable:
         if not self.has_variable_access.value and len(self.writes) <= 1:
             for children in self.children.values():
                 new_replacements = children.collect_replacements()
-                self_value -= sum(len(reads.targets) for replacements in new_replacements for reads in replacements) - 1
+                self_value -= (
+                    sum(
+                        len(reads.targets)
+                        for replacements in new_replacements
+                        for reads in replacements
+                    )
+                    - 1
+                )
                 replacements.extend(new_replacements)
         alias: Optional[Name] = None
         do_replacement: bool = False
