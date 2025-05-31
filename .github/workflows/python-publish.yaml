@@ -53,12 +53,18 @@ jobs:
       run: pyinstaller tumfl.spec
     - name: Rename output (for clarity)
       run: |
+        ls -lha dist
         mkdir -p dist_out
         for f in dist/tumfl*; do
           filename=$(basename "$f")
-          extension="${filename##*.}"
-          name="${filename%.*}"
-          cp "$f" "dist_out/${name}-${{ runner.os }}.${extension}"
+          if [[ "$filename" == *.* ]]; then
+            extension=".${filename##*.}"
+            name="${filename%.*}"
+          else
+            extension=""
+            name="${filename}"
+          fi
+          cp "$f" "dist_out/${name}-${{ toLower(runner.os) }}${extension}"
         done
       shell: bash
     - name: Upload build as artifact
@@ -77,7 +83,7 @@ jobs:
           path: artifacts
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
         env:
