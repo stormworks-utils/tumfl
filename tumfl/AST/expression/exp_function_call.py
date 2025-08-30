@@ -15,7 +15,9 @@ class ExpFunctionCall(Expression):
         token: Token,
         function: Expression,
         arguments: Sequence[Expression],
+        has_parentheses: bool = False,
     ):
         super().__init__(token, "ExpFunctionCall")
         self.function: Expression = function
         self.arguments: list[Expression] = list(arguments)
+        self.has_parentheses: bool = has_parentheses

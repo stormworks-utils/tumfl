@@ -752,6 +752,10 @@ class Parser:
             remove_hint = True
             self._eat_token()
             var = self._parse_exp()
+            # In most cases, having extra parenthesis is not necessary, but for function calls and varargs,
+            # it is important to keep them, as they change the meaning of the expression
+            if isinstance(var, (Vararg, ExpFunctionCall, ExpMethodInvocation)):
+                var.has_parentheses = True
             self._eat_token(TokenType.R_PAREN)
         else:
             self._error("Unexpected variable", self.current_token)

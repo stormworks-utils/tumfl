@@ -231,6 +231,14 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser._parse_var(), expected_tree_f)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, EOF_TOKEN)
+        parser = Parser("((2)(1))")
+        expected_tree_pf = ExpFunctionCall(
+            Token(TokenType.L_PAREN, "(", 0, 0),
+            self.parse_number("2"),
+            [self.parse_number("1")],
+            has_parentheses=True,
+        )
+        self.assertEqual(parser._parse_var(), expected_tree_pf)
         parser = Parser("a:b()")
         expected_tree_m = ExpMethodInvocation(
             Token(TokenType.COLON, "[", 0, 0),
@@ -506,6 +514,9 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser._parse_exp(), expected_tree)
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, EOF_TOKEN)
+        parser = Parser("(...)")
+        expected_tree = Vararg(Token(TokenType.ELLIPSIS, "...", 0, 0), has_parentheses=True)
+        self.assertEqual(parser._parse_exp(), expected_tree)
 
     def test_parse_table_expr(self):
         parser = Parser("{a}")
@@ -728,6 +739,15 @@ class TestParser(unittest.TestCase):
             pe.exception.hints,
             [Hint(Token(TokenType.COLON, ":", 0, 0), "invocation", "name")],
         )
+        parser = Parser("(a:b(1))")
+        expected_tree = ExpMethodInvocation(
+            Token(TokenType.NAME, "a", 0, 0),
+            self.parse_name("a"),
+            self.parse_name("b"),
+            [self.parse_number("1")],
+            has_parentheses=True,
+        )
+        self.assertEqual(parser._parse_exp(), expected_tree)
 
     def test_index_expr(self):
         parser = Parser("a[1]")
