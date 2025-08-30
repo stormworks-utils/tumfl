@@ -244,6 +244,9 @@ class TestFormatter(unittest.TestCase):
         exp = Parser("...")._parse_exp()
         expected = ["..."]
         self.assertEqual(self.normal.visit(exp), expected)
+        exp = Parser("(...)")._parse_exp()
+        expected = ["(", "...", ")"]
+        self.assertEqual(self.normal.visit(exp), expected)
 
     def test_While(self):
         stmt = Parser("while i do a=b end")._parse_while()
@@ -430,6 +433,9 @@ class TestFormatter(unittest.TestCase):
         exp = Parser("a(1)")._parse_exp()
         expected = ["a", "(", "1", ")"]
         self.assertEqual(self.normal.visit(exp), expected)
+        exp = Parser("(a(1))")._parse_exp()
+        expected = ["(", "a", "(", "1", ")", ")"]
+        self.assertEqual(self.normal.visit(exp), expected)
 
     def test_ExpFunctionDefinition(self):
         exp = Parser("function (a,b)a=b end")._parse_exp()
@@ -451,6 +457,9 @@ class TestFormatter(unittest.TestCase):
     def test_ExpMethodInvocation(self):
         exp = Parser("a:b(1)")._parse_exp()
         expected = ["a", ":", "b", "(", "1", ")"]
+        self.assertEqual(self.normal.visit(exp), expected)
+        exp = Parser("(a:b(1))")._parse_exp()
+        expected = ["(", "a", ":", "b", "(", "1", ")", ")"]
         self.assertEqual(self.normal.visit(exp), expected)
 
     def test_LocalFunctionDefinition(self):

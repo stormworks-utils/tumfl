@@ -279,7 +279,8 @@ class Formatter(BasicWalker[Retype]):
         return ["{", *self._format_args(node.fields), "}"]
 
     def visit_Vararg(self, node: Vararg) -> Retype:
-        unused(node)
+        if node.has_parentheses:
+            return ["(", "...", ")"]
         return ["..."]
 
     def visit_While(self, node: While) -> Retype:
@@ -422,9 +423,12 @@ class Formatter(BasicWalker[Retype]):
         return result
 
     def visit_ExpFunctionCall(self, node: ExpFunctionCall) -> Retype:
-        return self._format_var(node.function) + self._format_function_args(
+        result = self._format_var(node.function) + self._format_function_args(
             node.arguments
         )
+        if node.has_parentheses:
+            return ["(", *result, ")"]
+        return result
 
     def visit_ExpFunctionDefinition(self, node: ExpFunctionDefinition) -> Retype:
         return [
@@ -438,10 +442,12 @@ class Formatter(BasicWalker[Retype]):
 
     def visit_ExpMethodInvocation(self, node: ExpMethodInvocation) -> Retype:
         return [
+            *(("(",) if node.has_parentheses else ()),
             *self._format_var(node.function),
             ":",
             *self.visit(node.method),
             *self._format_function_args(node.arguments),
+            *((")",) if node.has_parentheses else ()),
         ]
 
     def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> Retype:

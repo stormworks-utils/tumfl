@@ -18,8 +18,10 @@ class ExpMethodInvocation(Expression):
         function: Expression,
         method: Name,
         arguments: Sequence[Expression],
+        has_parentheses: bool = False,
     ):
         super().__init__(token, "ExpMethodInvocation")
         self.function: Expression = function
         self.method: Name = method
         self.arguments: list[Expression] = list(arguments)
+        self.has_parentheses: bool = has_parentheses
