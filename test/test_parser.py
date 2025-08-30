@@ -515,7 +515,9 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(parser.context_hints), 0)
         self.assertEqual(parser.current_token, EOF_TOKEN)
         parser = Parser("(...)")
-        expected_tree = Vararg(Token(TokenType.ELLIPSIS, "...", 0, 0), has_parentheses=True)
+        expected_tree = Vararg(
+            Token(TokenType.ELLIPSIS, "...", 0, 0), has_parentheses=True
+        )
         self.assertEqual(parser._parse_exp(), expected_tree)
 
     def test_parse_table_expr(self):
