@@ -40,3 +40,15 @@ class TestBlockOptimization(unittest.TestCase):
         foo(c)
         """
         self.run_test(code, expected)
+
+
+    def test_shadow(self):
+        code = """
+        a = 1
+        do
+            local a = a + 1
+            local b = a + 1
+            print(a, b)
+        end
+        """
+        self.run_test(code, code)
