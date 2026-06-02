@@ -1,4 +1,13 @@
-from tumfl.AST import Assign, ASTNode, Block, LocalAssign, Name
+from tumfl.AST import (
+    Assign,
+    ASTNode,
+    Block,
+    ExpFunctionDefinition,
+    FunctionDefinition,
+    LocalAssign,
+    LocalFunctionDefinition,
+    Name,
+)
 from tumfl.basic_walker import NoneWalker
 from tumfl.minifier.util.find_names import FindNames
 
@@ -17,6 +26,17 @@ class Optimize(NoneWalker):
         super().visit_Block(node)
         local_assigns: list[LocalAssign] = []
         local_names: set[str] = set()
+        outer_local: set[str] = set()
+        parent = node.parent_class
+        if isinstance(
+            parent, (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition)
+        ):
+            outer_local.update(
+                name.variable_name
+                for name in parent.parameters
+                if isinstance(name, Name)
+            )
+        local_names.update(outer_local)
         global_names: set[str] = set()
         for stmt in node.statements:
             if isinstance(stmt, LocalAssign):
@@ -32,7 +52,9 @@ class Optimize(NoneWalker):
         if len(local_names) > 1 and not local_names.intersection(global_names):
             new_assign = LocalAssign(local_assigns[0].token, [], [])
             for assign in local_assigns:
-                new_assign.variable_names.extend(assign.variable_names)
+                for name in assign.variable_names:
+                    if name.name.variable_name not in outer_local:
+                        new_assign.variable_names.append(name)
             node.statements.insert(0, new_assign)
             for assign in local_assigns:
                 if assign.expressions:
