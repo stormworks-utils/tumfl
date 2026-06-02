@@ -71,3 +71,20 @@ class TestBlockOptimization(unittest.TestCase):
         end
         """
         self.run_test(code, expected)
+
+    def test_local_function_single(self):
+        code = """
+        local function foo(a)
+            local a = a + 1
+            local b = a + 2
+            return a + b
+        end
+        """
+        expected = """
+        local function foo(a)
+            a = a + 1
+            local b = a + 2
+            return a + b
+        end
+        """
+        self.run_test(code, expected)

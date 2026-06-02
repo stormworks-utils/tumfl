@@ -49,7 +49,9 @@ class Optimize(NoneWalker):
                 )
             else:
                 self.__add_global_names(stmt, local_names, global_names)
-        if len(local_names) > 1 and not local_names.intersection(global_names):
+        if len(
+            local_names.difference(outer_local)
+        ) > 1 and not local_names.intersection(global_names):
             new_assign = LocalAssign(local_assigns[0].token, [], [])
             for assign in local_assigns:
                 for name in assign.variable_names:
@@ -63,3 +65,16 @@ class Optimize(NoneWalker):
                     assign.replace(normal_assign)
                 else:
                     assign.remove()
+        elif len(outer_local) > 0:
+            for assign in local_assigns:
+                if assign.expressions:
+                    targets: set[str] = {
+                        name.name.variable_name for name in assign.variable_names
+                    }
+                    if targets.issubset(outer_local):
+                        normal_assign = Assign(
+                            assign.token,
+                            [name.name for name in assign.variable_names],
+                            assign.expressions,
+                        )
+                        assign.replace(normal_assign)
