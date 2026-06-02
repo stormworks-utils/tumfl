@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from logging import warning
 from typing import Optional
 
 from tumfl.AST import (
@@ -133,9 +132,6 @@ class Simplify(NoneWalker):
                 definition,
                 (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition),
             ):
-                warning(
-                    f'Function call to "{node.function!s}" is not a function definition'
-                )
                 return
             if (
                 all(
@@ -152,7 +148,9 @@ class Simplify(NoneWalker):
                 and all(isinstance(arg, Name) for arg in node.arguments)
                 and all(isinstance(arg, Name) for arg in definition.parameters)
                 and not self.has_return(definition.body)
+                and False
             ):
+                # See test_shadowing why this is disabled for now, may be reenabled in the future
                 # Inlining is quite conservative, inlining only functions that have only name arguments,
                 # and no return statements (and for obvious reasons, only if there is only 1 callee)
                 replacements: dict[Name, Name] = {}
