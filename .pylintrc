@@ -4,8 +4,6 @@ ignore=.venv,test
 
 jobs=0
 
-suggestion-mode=yes
-
 py-version = 3.10.0
 
 [MESSAGES CONTROL]
