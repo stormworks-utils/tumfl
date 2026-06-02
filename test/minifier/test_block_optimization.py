@@ -41,7 +41,6 @@ class TestBlockOptimization(unittest.TestCase):
         """
         self.run_test(code, expected)
 
-
     def test_shadow(self):
         code = """
         a = 1
