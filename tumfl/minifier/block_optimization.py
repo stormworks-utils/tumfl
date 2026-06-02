@@ -66,18 +66,21 @@ class Optimize(NoneWalker):
             node.statements.insert(0, new_assign)
             for assign in local_assigns:
                 if assign.expressions:
-                    targets: list[Name] = [name.name for name in assign.variable_names]
-                    normal_assign = Assign(assign.token, targets, assign.expressions)
+                    normal_assign = Assign(
+                        assign.token,
+                        [name.name for name in assign.variable_names],
+                        assign.expressions,
+                    )
                     assign.replace(normal_assign)
                 else:
                     assign.remove()
         elif len(outer_local) > 0:
             for assign in local_assigns:
                 if assign.expressions:
-                    targets: set[str] = {
+                    str_targets: set[str] = {
                         name.name.variable_name for name in assign.variable_names
                     }
-                    if targets.issubset(outer_local):
+                    if str_targets.issubset(outer_local):
                         normal_assign = Assign(
                             assign.token,
                             [name.name for name in assign.variable_names],
