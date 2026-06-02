@@ -200,15 +200,13 @@ class TestReplaceName(unittest.TestCase):
         self.assertEqual(next(sequence), "aa")
 
     def test_full_replace(self):
-        ast = parse(
-            """
+        ast = parse("""
         function foo(a, b)
             return a + b
         end
         foo()
         bar.baz()
-        """
-        )
+        """)
         function_definition = ast.statements[0]
         assert isinstance(function_definition, FunctionDefinition)
         first_arg = function_definition.parameters[0]
