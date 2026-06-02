@@ -4,9 +4,11 @@ from tumfl.AST import (
     Block,
     ExpFunctionDefinition,
     FunctionDefinition,
+    IterativeFor,
     LocalAssign,
     LocalFunctionDefinition,
     Name,
+    NumericFor,
 )
 from tumfl.basic_walker import NoneWalker
 from tumfl.minifier.util.find_names import FindNames
@@ -36,6 +38,10 @@ class Optimize(NoneWalker):
                 for name in parent.parameters
                 if isinstance(name, Name)
             )
+        elif isinstance(parent, IterativeFor):
+            outer_local.update(name.variable_name for name in parent.namelist)
+        elif isinstance(parent, NumericFor):
+            outer_local.add(parent.variable_name.variable_name)
         local_names.update(outer_local)
         global_names: set[str] = set()
         for stmt in node.statements:
