@@ -143,7 +143,7 @@ class Simplify(NoneWalker):
                 node.remove()
                 if len(var.reads) == 0:
                     definition.remove()
-            elif (
+            elif ( # pylint:disable=condition-evals-to-constant
                 len(var.reads) == 1
                 and all(isinstance(arg, Name) for arg in node.arguments)
                 and all(isinstance(arg, Name) for arg in definition.parameters)
