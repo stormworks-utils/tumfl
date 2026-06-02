@@ -88,3 +88,23 @@ class TestBlockOptimization(unittest.TestCase):
         end
         """
         self.run_test(code, expected)
+
+    def test_loop(self):
+        code = """
+        for i = 1, 10 do
+            local i = i + 1
+            local b = i + 1
+            local c = b + 1
+            print(i, b, c)
+        end
+        """
+        expected = """
+        for i = 1, 10 do
+            local b, c
+            i = i + 1
+            b = i + 1
+            c = b + 1
+            print(i, b, c)
+        end
+        """
+        self.run_test(code, expected)
