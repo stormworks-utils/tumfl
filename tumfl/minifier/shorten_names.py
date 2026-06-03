@@ -223,10 +223,11 @@ class GetNames(NoneWalker):
 
 
 class RemoveUnused(NoneWalker):
-    def __init__(self) -> None:
+    def __init__(self, preserve_names: set[str]) -> None:
         super().__init__()
         self.found_any: bool = False
         self.remove: RemoveName = RemoveName()
+        self.preserve_names: set[str] = preserve_names
 
     def cleanup(self, node: ASTNode) -> bool:
         for comment in node.token.comment:
@@ -243,6 +244,7 @@ class RemoveUnused(NoneWalker):
             isinstance(target, Name)
             and (var := target.get_attribute(Variable))
             and var.is_unused()
+            and target.variable_name not in self.preserve_names
             for target in node.targets
         ):
             if self.cleanup(node):
@@ -251,7 +253,9 @@ class RemoveUnused(NoneWalker):
 
     def visit_LocalAssign(self, node: LocalAssign) -> None:
         if all(
-            (var := name.name.get_attribute(Variable)) and var.is_unused()
+            (var := name.name.get_attribute(Variable))
+            and var.is_unused()
+            and name.name.variable_name not in self.preserve_names
             for name in node.variable_names
         ):
             if self.cleanup(node):
@@ -270,14 +274,22 @@ class RemoveUnused(NoneWalker):
                     break
 
     def visit_FunctionDefinition(self, node: FunctionDefinition) -> None:
-        if (var := node.names[0].get_attribute(Variable)) and var.is_unused():
+        if (
+            (var := node.names[0].get_attribute(Variable))
+            and var.is_unused()
+            and node.names[0].variable_name not in self.preserve_names
+        ):
             if self.cleanup(node):
                 return
         self.cleanup_params(node.parameters)
         super().visit_FunctionDefinition(node)
 
     def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> None:
-        if (var := node.function_name.get_attribute(Variable)) and var.is_unused():
+        if (
+            (var := node.function_name.get_attribute(Variable))
+            and var.is_unused()
+            and node.function_name.variable_name not in self.preserve_names
+        ):
             if self.cleanup(node):
                 return
         self.cleanup_params(node.parameters)
@@ -288,8 +300,10 @@ class RemoveUnused(NoneWalker):
         super().visit_ExpFunctionDefinition(node)
 
 
-def remove_unused_names(node: ASTNode, names: GetNames) -> None:
-    remove = RemoveUnused()
+def remove_unused_names(
+    node: ASTNode, names: GetNames, preserve_names: set[str]
+) -> None:
+    remove = RemoveUnused(preserve_names)
     remove.found_any = True
     while remove.found_any:
         remove.found_any = False
