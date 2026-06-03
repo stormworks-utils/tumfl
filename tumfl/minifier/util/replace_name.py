@@ -117,10 +117,17 @@ def char_sequence() -> Iterator[str]:
         length += 1
 
 
-def full_replace(chunk: Block, replacements: ReplacementCollection) -> None:
+def full_replace(
+    chunk: Block, replacements: ReplacementCollection, preserve_names: set[str]
+) -> None:
     for inner_loop, new_name in zip(replacements, char_sequence()):
         for replacement in inner_loop:
-            replacement.replacement = new_name
+            if any(
+                name.variable_name in preserve_names for name in replacement.targets
+            ):
+                replacement.replacement = replacement.targets[0].variable_name
+            else:
+                replacement.replacement = new_name
     to_alias: list[Replacements] = []
     for inner_loop in replacements:
         for replacement in inner_loop:

@@ -241,7 +241,7 @@ class TestReplaceName(unittest.TestCase):
                 ),
             ],
         ]
-        full_replace(ast, replacements)
+        full_replace(ast, replacements, set())
         expected = """
         d = bar.baz
         function c(b, a)
@@ -249,5 +249,26 @@ class TestReplaceName(unittest.TestCase):
         end
         c()
         d()
+        """
+        self.code_equal(ast, expected)
+
+    def test_ignore(self):
+        ast = parse("""
+        function foo(a, b)
+            return a + b
+        end
+        """)
+        function_definition = ast.statements[0]
+        assert isinstance(function_definition, FunctionDefinition)
+        replacements = [
+            [
+                Replacements([function_definition.names[0]], None),
+            ],
+        ]
+        full_replace(ast, replacements, {"foo"})
+        expected = """
+        function foo(a, b)
+            return a + b
+        end
         """
         self.code_equal(ast, expected)
