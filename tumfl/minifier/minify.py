@@ -13,10 +13,8 @@ def minify(ast: ASTNode, preserve_names: Optional[set[str]] = None) -> None:
     r = GetNames()
     r(ast)
     remove_unused_names(ast, r, preserve_names or set())
-    # print(r.current_scope)
     assert isinstance(ast, Chunk)
     replacements = r.current_scope.collect_replacements()
     full_replace(ast, replacements, preserve_names or set())
     Optimize()(ast)
-    # CombineLocal()(ast) combine_local still contains flaws
     Simplify()(ast)
