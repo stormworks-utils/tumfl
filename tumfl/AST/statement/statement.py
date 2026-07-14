@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 
 from tumfl.AST.ast_node import ASTNode
-from tumfl.Token import Token
+from tumfl.token import Token
 
 
 class Statement(ASTNode, ABC):

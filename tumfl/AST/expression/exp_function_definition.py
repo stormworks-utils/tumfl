@@ -6,7 +6,7 @@ from .expression import Expression
 
 if TYPE_CHECKING:
     from tumfl.AST import BaseFunctionDefinition, Block, Name, Vararg
-    from tumfl.Token import Token
+    from tumfl.token import Token
 
 
 class ExpFunctionDefinition(Expression):

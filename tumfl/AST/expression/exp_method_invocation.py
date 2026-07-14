@@ -6,7 +6,7 @@ from .expression import Expression
 
 if TYPE_CHECKING:
     from tumfl.AST import Name
-    from tumfl.Token import Token
+    from tumfl.token import Token
 
 
 class ExpMethodInvocation(Expression):

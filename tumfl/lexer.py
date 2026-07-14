@@ -2,7 +2,7 @@ import sys
 from typing import Dict, List, NoReturn, Optional, Tuple, TypedDict
 
 from .error import LexerError
-from .Token import Token, TokenType
+from .token import Token, TokenType
 
 RESERVED_KEYWORDS: Dict[str, TokenType] = {
     t.value: t

@@ -11,7 +11,7 @@ from .AST import (
 )
 from .basic_walker import NoneWalker
 from .error import SemanticError
-from .Token import Token
+from .token import Token
 
 
 class SemanticAnalyzer(NoneWalker):

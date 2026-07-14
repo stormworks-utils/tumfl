@@ -5,7 +5,7 @@ from .error import LexerError, ParserError
 from .formatter import format
 from .minifier import minify
 from .parser import parse
-from .Token import Token
+from .token import Token
 
 __all__ = [
     "resolve_recursive",

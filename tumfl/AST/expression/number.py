@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from tumfl.Token import Token, TokenType
+from tumfl.token import Token, TokenType
 
 from .expression import Expression
 

@@ -6,7 +6,7 @@ from .variable import Variable
 
 if TYPE_CHECKING:
     from tumfl.AST import Expression
-    from tumfl.Token import Token
+    from tumfl.token import Token
 
 
 class Index(Variable):

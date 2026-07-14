@@ -7,7 +7,7 @@ from tumfl.AST.ast_node import ASTNode
 
 if TYPE_CHECKING:
     from tumfl.AST import Expression, Name
-    from tumfl.Token import Token
+    from tumfl.token import Token
 
 
 class TableField(ASTNode, ABC):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .Token import Token
+from .token import Token
 
 if TYPE_CHECKING:
     from .parser import Hint

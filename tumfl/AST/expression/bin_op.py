@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from tumfl.Token import Token
+from tumfl.token import Token
 
 from .expression import Expression
 

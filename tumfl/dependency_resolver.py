@@ -19,7 +19,7 @@ from .AST import (
 from .basic_walker import NoneWalker
 from .error import InvalidDependencyError
 from .parser import parse
-from .Token import Token
+from .token import Token
 
 if TYPE_CHECKING:
     from .config import Config

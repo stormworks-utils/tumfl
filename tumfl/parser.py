@@ -5,7 +5,7 @@ from typing import Callable, NoReturn, Optional
 from .AST import *
 from .error import ParserError
 from .lexer import Lexer
-from .Token import Token, TokenType
+from .token import Token, TokenType
 
 
 class Hint:

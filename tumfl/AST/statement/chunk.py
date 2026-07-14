@@ -6,7 +6,7 @@ from .block import Block
 
 if TYPE_CHECKING:
     from tumfl.AST import Expression, Statement
-    from tumfl.Token import Token
+    from tumfl.token import Token
 
 
 class Chunk(Block):

@@ -16,7 +16,7 @@ from tumfl.AST import (
 )
 from tumfl.lexer import Lexer
 from tumfl.to_python_type import NilVal, Retype
-from tumfl.Token import Token, TokenType
+from tumfl.token import Token, TokenType
 
 NAME_REGEX: re.Pattern = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 

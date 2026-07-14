@@ -4,7 +4,7 @@ from tumfl.AST import *
 from tumfl.AST.base_function_definition import BaseFunctionDefinition
 from tumfl.lexer import Lexer, LexerError
 from tumfl.parser import Hint, Parser, ParserError
-from tumfl.Token import Token, TokenType
+from tumfl.token import Token, TokenType
 
 EOF_TOKEN: Token = Token(TokenType.EOF, "eof", 0, 0)
 

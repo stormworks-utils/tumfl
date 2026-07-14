@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tumfl.Token import Token
+from tumfl.token import Token
 
 from .statement import Statement
 

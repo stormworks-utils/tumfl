@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tumfl.Token import Token
+from tumfl.token import Token
 
 from .statement import Statement
 
