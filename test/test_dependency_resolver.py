@@ -30,6 +30,7 @@ class TestDependencyResolver(unittest.TestCase):
         assert isinstance(ast, Chunk)
         self.assertEqual(len(ast.statements), 4)
         self.assertIsInstance(ast.statements[0], Block)
+        self.assertIsNotNone(ast.statements[0].parent_class)
         self.assertIsInstance(ast.statements[1], Block)
         self.assertIsInstance(ast.statements[2], Semicolon)
         self.assertIsInstance(ast.statements[3], FunctionCall)

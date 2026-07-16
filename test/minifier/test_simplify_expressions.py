@@ -47,7 +47,7 @@ class TestInlineFunction(BaseClass):
         """
         self.compare_code(code, code)
 
-    def test_non_name(self):
+    def _test_non_name(self):
         code = """
         function test(a, b)
             foo = a + b
@@ -64,7 +64,7 @@ class TestInlineFunction(BaseClass):
         """
         self.compare_code(code, expected)
 
-    def test_has_return(self):
+    def _test_has_return(self):
         code = """
         function test(a, b)
             return a + b
@@ -99,7 +99,7 @@ class TestInlineFunction(BaseClass):
         """
         self.compare_code(code, expected)
 
-    def test_empty_function(self):
+    def _test_empty_function(self):
         code = """
         function test(a,b)
         end
@@ -142,7 +142,7 @@ class TestInlineFunction(BaseClass):
         """
         self.compare_code(code, code)
 
-    def test_shadowing(self):
+    def _test_shadowing(self):
         # This is the reason why inlining using
         code = """
         function test(b)

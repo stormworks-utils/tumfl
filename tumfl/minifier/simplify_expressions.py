@@ -8,18 +8,12 @@ from tumfl.AST import (
     BinOp,
     Block,
     Boolean,
-    ExpFunctionCall,
-    ExpFunctionDefinition,
     ExpMethodInvocation,
-    FunctionCall,
-    FunctionDefinition,
     If,
-    LocalFunctionDefinition,
     MethodInvocation,
     Name,
     NamedIndex,
     NamedTableField,
-    Semicolon,
     UnaryOperand,
     UnOp,
 )
@@ -28,7 +22,6 @@ from tumfl.basic_walker import AggregatingWalker, NoneWalker
 from ..to_lua_type import to_lua_type
 from ..to_python_type import ToPythonType
 from .util.remove_name import RemoveName
-from .util.variable import Variable
 
 
 class ReplaceName(NoneWalker):
@@ -122,53 +115,3 @@ class Simplify(NoneWalker):
                 node.replace(node.false)
             else:
                 node.remove()
-
-    def visit_FunctionCall(self, node: FunctionCall) -> None:
-        super().visit_FunctionCall(node)
-        var = node.get_attribute(Variable)
-        if var and len(var.writes) == 1:
-            definition: Optional[ASTNode] = var.writes[0].parent_class
-            if not isinstance(
-                definition,
-                (FunctionDefinition, LocalFunctionDefinition, ExpFunctionDefinition),
-            ):
-                return
-            if (
-                all(
-                    isinstance(child, Semicolon) for child in definition.body.statements
-                )
-                and not definition.body.returns
-            ):
-                self.remove_name(node)
-                node.remove()
-                if len(var.reads) == 0:
-                    definition.remove()
-            elif (  # pylint:disable=condition-evals-to-constant
-                len(var.reads) == 1
-                and all(isinstance(arg, Name) for arg in node.arguments)
-                and all(isinstance(arg, Name) for arg in definition.parameters)
-                and not self.has_return(definition.body)
-                and False
-            ):
-                # See test_shadowing why this is disabled for now, may be reenabled in the future
-                # Inlining is quite conservative, inlining only functions that have only name arguments,
-                # and no return statements (and for obvious reasons, only if there is only 1 callee)
-                replacements: dict[Name, Name] = {}
-                for arg, value in zip(definition.parameters, node.arguments):
-                    assert isinstance(arg, Name) and isinstance(value, Name)
-                    replacements[arg] = value
-                ReplaceName(replacements).visit(definition.body)
-                node.replace(definition.body)
-                definition.remove()
-            elif len(var.reads) == 1:
-                # Replaces a function call with an inline function definition, and finally a call
-                # While this still involves the `function` keyword, it only requires a set of parantheses
-                # (function(params)body end)(), instead of a name (necessarily a split from the keyword)
-                # and potentially spaces before and after the definition
-                function = ExpFunctionDefinition(
-                    node.token, definition.parameters, definition.body
-                )
-                call = ExpFunctionCall(node.token, function, node.arguments)
-                function.parent_class = call
-                node.replace(call)
-                definition.remove()
