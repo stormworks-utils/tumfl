@@ -75,7 +75,7 @@ class ResolveDependencies(NoneWalker):
         return path
 
     def __find_and_parse(
-        self, name: str, node: ASTNode, deduplicate: bool, results: list[Chunk]
+        self, name: str, node: ASTNode, deduplicate: bool, results: list[Block]
     ) -> None:
         assert node.file_name
         name = name.replace("/", ".")
@@ -90,7 +90,7 @@ class ResolveDependencies(NoneWalker):
             results.append(ast)
 
     def __get_table_dependencies(
-        self, node: Table, results: list[Chunk], deduplicate: bool
+        self, node: Table, results: list[Block], deduplicate: bool
     ) -> None:
         for item in node.fields:
             if isinstance(item, NumberedTableField):
@@ -109,9 +109,9 @@ class ResolveDependencies(NoneWalker):
 
     def __get_ast(
         self, node: Union[FunctionCall, ExpFunctionCall], deduplicate: bool = True
-    ) -> Optional[Chunk | Semicolon | Block]:
+    ) -> Optional[Semicolon | Block]:
         if isinstance(node.function, Name) and node.function.variable_name == "require":
-            results: list[Chunk] = []
+            results: list[Block] = []
             for arg in node.arguments:
                 if isinstance(arg, String):
                     self.__find_and_parse(arg.value, node, deduplicate, results)
@@ -122,7 +122,7 @@ class ResolveDependencies(NoneWalker):
                         f"Wrong require() arguments. Expected string or table, got {arg}",
                         node.token,
                     )
-            ast: Union[Chunk, Semicolon, Block]
+            ast: Union[Semicolon, Block]
             if not results:
                 ast = Semicolon(node.token)
                 ast.parent(node.parent_class, node.file_name)
