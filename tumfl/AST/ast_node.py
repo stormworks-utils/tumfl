@@ -80,7 +80,7 @@ class ASTNode(ABC):
         self.parent_class = parent
         self.file_name = file_name
         for child in self.__get_children():
-            child.parent(self, file_name)
+            child.parent(self, child.file_name or file_name)
 
     def replace(self, replacement: ASTNode) -> None:
         """Replaces node in-place"""
