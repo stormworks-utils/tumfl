@@ -83,7 +83,8 @@ class ResolveDependencies(NoneWalker):
             name, node.file_name.parent, node.token, deduplicate
         )
         if dependency_path:
-            ast: Chunk = _parse_file(dependency_path, self.config)
+            chunk: Chunk = _parse_file(dependency_path, self.config)
+            ast = Block(chunk.token, chunk.statements, chunk.returns)
             if self.add_source_description:
                 ast.comment.insert(0, f"Sourced from {dependency_path}")
             results.append(ast)
