@@ -125,7 +125,6 @@ class ResolveDependencies(NoneWalker):
             ast: Union[Semicolon, Block]
             if not results:
                 ast = Semicolon(node.token)
-                ast.parent(node.parent_class, node.file_name)
             elif len(results) == 1:
                 ast = results[0]
             else:
@@ -136,10 +135,8 @@ class ResolveDependencies(NoneWalker):
     def visit_FunctionCall(self, node: FunctionCall) -> None:
         if ast := self.__get_ast(node):
             if isinstance(ast, Semicolon):
-                assert node.parent_class
                 node.remove()
             else:
-                ast.parent_class = node.parent_class
                 node.replace(ast)
                 self.visit(ast)
         else:
@@ -152,11 +149,7 @@ class ResolveDependencies(NoneWalker):
             assert isinstance(ast, Block)
             function = ExpFunctionDefinition(node.token, [], ast)
             node.function = function
-            ast.parent_class = function
             call = ExpFunctionCall(node.token, function, [])
-            function.parent_class = call
-            call.parent_class = node.parent_class
-            ast.file_name = function.file_name = call.file_name = node.file_name
             node.replace(call)
             self.visit(call)
         else:
@@ -172,4 +165,5 @@ def resolve_recursive(
     ast = _parse_file(path, config)
     resolver = ResolveDependencies(search_path, add_source_description, config=config)
     resolver.visit(ast)
+    ast.parent(None, None)
     return ast
