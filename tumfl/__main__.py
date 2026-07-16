@@ -37,8 +37,6 @@ def compile_file(filename: Path, config: Config, minify: bool) -> str:
     result: ASTNode = resolve_recursive(
         filename, [source_directory], add_source_description=True, config=config
     )
-    with open("ast__.py", "w") as f:
-        f.write(str(result))
     if minify:
         minifier.minify(result)
         return format(result, MinifiedStyle)
