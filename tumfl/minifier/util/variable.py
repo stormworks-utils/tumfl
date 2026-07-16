@@ -91,8 +91,10 @@ class Variable:
         return f"Variable({self.writes=}, {self.reads=}, {self.children=}, {self.has_variable_access=}, {self.is_global=})"
 
     def is_unused(self) -> bool:
-        return len(self.reads) == 0 and all(
-            child.is_unused() for child in self.children.values()
+        return (
+            not self.preserve
+            and len(self.reads) == 0
+            and all(child.is_unused() for child in self.children.values())
         )
 
     def merge(self, other: Variable) -> None:
