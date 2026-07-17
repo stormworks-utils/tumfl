@@ -523,19 +523,15 @@ def add_semi(tokens: Retype) -> None:
         if isinstance(token, str):
             last_string = token
         elif token == Separators.Statement and last_string.startswith("("):
-            next_str: Optional[str] = None
-            for j in range(i - 1, -1, -1):
-                other_token = tokens[j]
-                if isinstance(other_token, str):
-                    next_str = other_token
-                    break
-            if next_str is not None:
-                if (
-                    next_str[-1] in string.ascii_letters
-                    or next_str[-1] in string.digits
-                    or next_str[-1] == ")"
-                ):
-                    tokens.insert(i + 1, Separators.Semicolon)
+            next_str = tokens[i - 1]
+            # This is guranteed by __remove_orphaned_tokens
+            assert isinstance(next_str, str)
+            if (
+                next_str[-1] in string.ascii_letters
+                or next_str[-1] in string.digits
+                or next_str[-1] == ")"
+            ):
+                tokens.insert(i + 1, Separators.Semicolon)
 
 
 def search_token(

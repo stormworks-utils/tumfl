@@ -671,8 +671,8 @@ class TestTokenFormatters(unittest.TestCase):
         self.assertEqual(format(chunk, MinifiedStyle), expected)
 
     def test_format_ambiguous(self):
-        chunk = Parser("a=b+c;(print or io.write)('done')").parse_chunk()
-        expected = '-- tumfl\na = b + c\n;(print or io.write)("done")\n'
+        chunk = Parser("do a=b+c;(print or io.write)('done')end").parse_chunk()
+        expected = '-- tumfl\ndo\n\ta = b + c\n\t;(print or io.write)("done")\nend\n'
         self.assertEqual(format(chunk), expected)
 
     def test_string_ident(self):
