@@ -674,6 +674,9 @@ class TestTokenFormatters(unittest.TestCase):
         chunk = Parser("do a=b+c;(print or io.write)('done')end").parse_chunk()
         expected = '-- tumfl\ndo\n\ta = b + c\n\t;(print or io.write)("done")\nend\n'
         self.assertEqual(format(chunk), expected)
+        chunk = Parser("a={b}(print or io.write)('done')").parse_chunk()
+        expected = '-- tumfl\na = {b}\n(print or io.write)("done")\n'
+        self.assertEqual(format(chunk), expected)
 
     def test_string_ident(self):
         self.assertEqual(
