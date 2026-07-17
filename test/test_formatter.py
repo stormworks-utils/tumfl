@@ -670,6 +670,11 @@ class TestTokenFormatters(unittest.TestCase):
         expected = "--tumfl\na=b;if 1 then;c=d;else;b=d;end"
         self.assertEqual(format(chunk, MinifiedStyle), expected)
 
+    def test_format_ambiguous(self):
+        chunk = Parser("a=b+c;(print or io.write)('done')").parse_chunk()
+        expected = '-- tumfl\na = b + c\n;(print or io.write)("done")\n'
+        self.assertEqual(format(chunk), expected)
+
     def test_string_ident(self):
         self.assertEqual(
             _string_ident("'abc def'", 0, TestStyle),

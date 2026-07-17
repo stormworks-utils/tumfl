@@ -64,6 +64,7 @@ class MinifiedStyle(FormattingStyle):
 
 class Separators(Enum):
     Statement = "stmt"
+    Semicolon = "semi"  # required in some cases
     Newline = "newline"
     Argument = "arg"
     Space = " "
@@ -506,6 +507,37 @@ def sep_required(first: str, second: str) -> bool:
     )
 
 
+def add_semi(tokens: Retype) -> None:
+    """
+    Add Separators.Semicolon in places where a semicolon is required to avoid ambiguity
+
+    See https://www.lua.org/manual/5.4/manual.html#3.3.1
+    a = b + c
+    (print or io.write)('done')
+    is ambiguous, so we force add
+    ;(print or io.write)('done')
+    """
+    last_string: str = "/"
+    for i in range(len(tokens) - 1, 0, -1):
+        token = tokens[i]
+        if isinstance(token, str):
+            last_string = token
+        elif token == Separators.Statement and last_string.startswith("("):
+            next_str: Optional[str] = None
+            for j in range(i - 1, -1, -1):
+                other_token = tokens[j]
+                if isinstance(other_token, str):
+                    next_str = other_token
+                    break
+            if next_str is not None:
+                if (
+                    next_str[-1] in string.ascii_letters
+                    or next_str[-1] in string.digits
+                    or next_str[-1] == ")"
+                ):
+                    tokens.insert(i + 1, Separators.Semicolon)
+
+
 def search_token(
     start_idx: int, direction: Literal[1, -1], tokens: Retype
 ) -> str | Separators:
@@ -585,6 +617,8 @@ def __estimate_width(
                 return None
             case Separators.Indent | Separators.DeIndent:
                 pass
+            case Separators.Semicolon:
+                size += 1
             case literal_string:
                 if "\n" in literal_string:
                     return None
@@ -775,6 +809,8 @@ def resolve_tokens(token_stream: Retype, style: Type[FormattingStyle]) -> None:
                 token_stream[i] = " "
             elif token == Separators.Dot:
                 token_stream[i] = "."
+            elif token == Separators.Semicolon:
+                token_stream[i] = ";"
             elif token in (Separators.Statement, Separators.Block):
                 token_stream[i] = style.STATEMENT_SEPARATOR
             elif token == Separators.Argument:
@@ -856,6 +892,8 @@ def format(ast: ASTNode, style: Optional[Type[FormattingStyle]] = None) -> str:
     style = style or FormattingStyle
     formatter: Formatter = Formatter(style)
     token_stream: Retype = formatter.visit(ast)
+    __remove_orphaned_tokens(token_stream)
+    add_semi(token_stream)
     if style.REMOVE_UNNECESSARY_CHARS:
         remove_separators(token_stream)
     if style.LINE_WIDTH > 0:
