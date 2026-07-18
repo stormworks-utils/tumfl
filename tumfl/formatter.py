@@ -452,8 +452,9 @@ class Formatter(BasicWalker[Retype]):
         ]
 
     def visit_LocalFunctionDefinition(self, node: LocalFunctionDefinition) -> Retype:
+        extra_newline = (Separators.Newline,) if self.s.EXTRA_NEWLINES else ()
         return [
-            Separators.Newline,
+            *extra_newline,
             "local",
             Separators.Space,
             "function",
@@ -464,7 +465,7 @@ class Formatter(BasicWalker[Retype]):
             ")",
             *self.visit(node.body)[1:],
             Separators.Statement,
-            Separators.Newline,
+            *extra_newline,
         ]
 
     def visit_ExplicitTableField(self, node: ExplicitTableField) -> Retype:
